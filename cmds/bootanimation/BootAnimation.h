@@ -93,6 +93,7 @@ private:
     sp<AudioPlayer>                 mAudioPlayer;
     AssetManager mAssets;
     Texture     mAndroid[2];
+    int         mRotation;
     int         mWidth;
     int         mHeight;
     EGLDisplay  mDisplay;

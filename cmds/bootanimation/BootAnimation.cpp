@@ -42,6 +42,7 @@
 #include <gui/SurfaceComposerClient.h>
 
 #include <SkBitmap.h>
+#include <SkCanvas.h>
 #include <SkStream.h>
 #include <SkImageDecoder.h>
 
@@ -67,9 +68,17 @@ static const int ANIM_ENTRY_NAME_MAX = 256;
 
 // ---------------------------------------------------------------------------
 
-BootAnimation::BootAnimation() : Thread(false), mZip(NULL)
+BootAnimation::BootAnimation() : Thread(false), mZip(NULL), mRotation(0)
 {
     mSession = new SurfaceComposerClient();
+
+    char prop[PROPERTY_VALUE_MAX];
+    if (property_get("ro.display.rotation", prop, "0") > 0) {
+        int value = atoi(prop);
+        if( 0 == value || 90 == value || 180 == value || 270 == value ){
+            mRotation = value;
+        }
+    }
 }
 
 BootAnimation::~BootAnimation() {
@@ -110,11 +119,43 @@ status_t BootAnimation::initTexture(Texture* texture, AssetManager& assets,
     Asset* asset = assets.open(name, Asset::ACCESS_BUFFER);
     if (!asset)
         return NO_INIT;
+
     SkBitmap bitmap;
-    SkImageDecoder::DecodeMemory(asset->getBuffer(false), asset->getLength(),
-            &bitmap, kUnknown_SkColorType, SkImageDecoder::kDecodePixels_Mode);
-    asset->close();
-    delete asset;
+    if(mRotation != 0) {
+        SkBitmap origbitmap;
+        SkImageDecoder::DecodeMemory(asset->getBuffer(false), asset->getLength(),
+                &origbitmap, kUnknown_SkColorType, SkImageDecoder::kDecodePixels_Mode);
+        asset->close();
+        delete asset;
+        // create a bitmap with rotated dimensions and draw the rotated original bitmap
+        SkImageInfo sKInfo = origbitmap.info();
+        if(90 == mRotation) {
+            bitmap.setInfo(sKInfo.makeWH(origbitmap.height(), origbitmap.width()), 0);
+        } else if (180 == mRotation) {
+            bitmap.setInfo(sKInfo.makeWH(origbitmap.width(), origbitmap.height()), 0);
+        } else if (270 == mRotation) {
+            bitmap.setInfo(sKInfo.makeWH(origbitmap.height(), origbitmap.width()), 0);
+        }
+
+        bitmap.allocPixels();
+        SkCanvas canvas(bitmap);
+
+        if(90 == mRotation) {
+            canvas.translate(SkIntToScalar(bitmap.width()), 0);
+        } else if (180 == mRotation) {
+            canvas.translate(SkIntToScalar(bitmap.width()), SkIntToScalar(bitmap.height()));
+        } else if (270 == mRotation) {
+            canvas.translate(0, SkIntToScalar(bitmap.height()));
+        }
+
+        canvas.rotate(SkIntToScalar(mRotation));
+        canvas.drawBitmap(origbitmap, 0, 0, NULL);
+    }else {
+        SkImageDecoder::DecodeMemory(asset->getBuffer(false), asset->getLength(),
+                &bitmap, kUnknown_SkColorType, SkImageDecoder::kDecodePixels_Mode);
+        asset->close();
+        delete asset;
+    }
 
     // ensure we can call getPixels(). No need to call unlock, since the
     // bitmap will go out of scope when we return from this method.
@@ -169,9 +210,38 @@ status_t BootAnimation::initTexture(const Animation::Frame& frame)
     SkImageDecoder* codec = SkImageDecoder::Factory(&stream);
     if (codec) {
         codec->setDitherImage(false);
-        codec->decode(&stream, &bitmap,
-                kN32_SkColorType,
-                SkImageDecoder::kDecodePixels_Mode);
+        if(mRotation != 0) {
+            SkBitmap origbitmap;
+            codec->decode(&stream, &origbitmap,
+                    kN32_SkColorType,
+                    SkImageDecoder::kDecodePixels_Mode);
+            SkImageInfo sKInfo = origbitmap.info();
+            if(90 == mRotation) {
+                bitmap.setInfo(sKInfo.makeWH(origbitmap.height(), origbitmap.width()), 0);
+            } else if (180 == mRotation) {
+                bitmap.setInfo(sKInfo.makeWH(origbitmap.width(), origbitmap.height()), 0);
+            } else if (270 == mRotation) {
+                bitmap.setInfo(sKInfo.makeWH(origbitmap.height(), origbitmap.width()), 0);
+            }
+
+            bitmap.allocPixels();
+            SkCanvas canvas(bitmap);
+
+            if(90 == mRotation) {
+                canvas.translate(SkIntToScalar(bitmap.width()), 0);
+            } else if (180 == mRotation) {
+                canvas.translate(SkIntToScalar(bitmap.width()), SkIntToScalar(bitmap.height()));
+            } else if (270 == mRotation) {
+                canvas.translate(0, SkIntToScalar(bitmap.height()));
+            }
+
+            canvas.rotate(SkIntToScalar(mRotation));
+            canvas.drawBitmap(origbitmap, 0, 0, NULL);
+        }else{
+            codec->decode(&stream, &bitmap,
+                    kN32_SkColorType,
+                    SkImageDecoder::kDecodePixels_Mode);
+        }
         delete codec;
     }
 
@@ -356,9 +426,17 @@ bool BootAnimation::android()
     do {
         nsecs_t now = systemTime();
         double time = now - startTime;
-        float t = 4.0f * float(time / us2ns(16667)) / mAndroid[1].w;
-        GLint offset = (1 - (t - floorf(t))) * mAndroid[1].w;
-        GLint x = xc - offset;
+
+        GLint x,y;
+        if(90 == mRotation || 270 == mRotation) {
+            float t = 4.0f * float(time / us2ns(16667)) / mAndroid[1].h;
+            GLint offset = (t - floorf(t)) * mAndroid[1].h;
+            y = yc - offset;
+        } else {
+            float t = 4.0f * float(time / us2ns(16667)) / mAndroid[1].w;
+            GLint offset = (1 - (t - floorf(t))) * mAndroid[1].w;
+            x = xc - offset;
+        }
 
         glDisable(GL_SCISSOR_TEST);
         glClear(GL_COLOR_BUFFER_BIT);
@@ -366,8 +444,14 @@ bool BootAnimation::android()
         glEnable(GL_SCISSOR_TEST);
         glDisable(GL_BLEND);
         glBindTexture(GL_TEXTURE_2D, mAndroid[1].name);
-        glDrawTexiOES(x,                 yc, 0, mAndroid[1].w, mAndroid[1].h);
-        glDrawTexiOES(x + mAndroid[1].w, yc, 0, mAndroid[1].w, mAndroid[1].h);
+
+        if(90 == mRotation || 270 == mRotation) {
+            glDrawTexiOES(xc, y,                 0, mAndroid[1].w, mAndroid[1].h);
+            glDrawTexiOES(xc, y + mAndroid[1].h, 0, mAndroid[1].w, mAndroid[1].h);
+        } else {
+            glDrawTexiOES(x,                 yc, 0, mAndroid[1].w, mAndroid[1].h);
+            glDrawTexiOES(x + mAndroid[1].w, yc, 0, mAndroid[1].w, mAndroid[1].h);
+        }
 
         glEnable(GL_BLEND);
         glBindTexture(GL_TEXTURE_2D, mAndroid[0].name);
@@ -483,8 +567,13 @@ bool BootAnimation::movie()
         char pathType;
         if (sscanf(l, "%d %d %d", &width, &height, &fps) == 3) {
             // ALOGD("> w=%d, h=%d, fps=%d", width, height, fps);
-            animation.width = width;
-            animation.height = height;
+            if(90 == mRotation || 270 == mRotation) {
+                animation.width = height;
+                animation.height = width;
+            } else {
+                animation.width = width;
+                animation.height = height;
+            }
             animation.fps = fps;
         }
         else if (sscanf(l, " %c %d %d %s #%6s", &pathType, &count, &pause, path, color) >= 4) {
@@ -573,8 +662,15 @@ bool BootAnimation::movie()
     glTexParameterx(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameterx(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-    const int xc = (mWidth - animation.width) / 2;
-    const int yc = ((mHeight - animation.height) / 2);
+    int xc, yc;
+    if(90 == mRotation || 270 == mRotation) {
+        xc = ((mHeight - animation.height) / 2);
+        yc = ((mWidth - animation.width) / 2);
+    } else {
+        xc = (mWidth - animation.width) / 2;
+        yc = ((mHeight - animation.height) / 2);
+    }
+
     nsecs_t lastFrame = systemTime();
     nsecs_t frameDuration = s2ns(1) / animation.fps;
 

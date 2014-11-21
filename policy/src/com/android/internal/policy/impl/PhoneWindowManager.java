@@ -1142,29 +1142,81 @@ public class PhoneWindowManager implements WindowManagerPolicy {
 
         final Resources res = mContext.getResources();
         int shortSize, longSize;
+        int rotation = SystemProperties.getInt("ro.display.rotation", 0);
+        if (rotation != 0 && rotation != 90 && rotation != 180 && rotation != 270) {
+            rotation = 0;
+        }
         if (width > height) {
             shortSize = height;
             longSize = width;
-            mLandscapeRotation = Surface.ROTATION_0;
-            mSeascapeRotation = Surface.ROTATION_180;
-            if (res.getBoolean(com.android.internal.R.bool.config_reverseDefaultRotation)) {
+            if (rotation == 0) {
+                mLandscapeRotation = Surface.ROTATION_0;
+                mSeascapeRotation = Surface.ROTATION_180;
+            } else if (rotation == 180) {
+                mLandscapeRotation = Surface.ROTATION_180;
+                mSeascapeRotation = Surface.ROTATION_0;
+            } else if (rotation == 90) {
                 mPortraitRotation = Surface.ROTATION_90;
                 mUpsideDownRotation = Surface.ROTATION_270;
-            } else {
+            } else if (rotation == 270) {
                 mPortraitRotation = Surface.ROTATION_270;
                 mUpsideDownRotation = Surface.ROTATION_90;
+            }
+
+            if (rotation == 0 || rotation == 180) {
+                if (res.getBoolean(com.android.internal.R.bool.config_reverseDefaultRotation)) {
+                    mPortraitRotation = Surface.ROTATION_90;
+                    mUpsideDownRotation = Surface.ROTATION_270;
+                } else {
+                    mPortraitRotation = Surface.ROTATION_270;
+                    mUpsideDownRotation = Surface.ROTATION_90;
+                }
+            }
+
+            if (rotation == 90 || rotation == 270) {
+                if (res.getBoolean(com.android.internal.R.bool.config_reverseDefaultRotation)) {
+                    mLandscapeRotation = Surface.ROTATION_0;
+                    mSeascapeRotation = Surface.ROTATION_180;
+                } else {
+                    mLandscapeRotation = Surface.ROTATION_180;
+                    mSeascapeRotation = Surface.ROTATION_0;
+                }
             }
         } else {
             shortSize = width;
             longSize = height;
-            mPortraitRotation = Surface.ROTATION_0;
-            mUpsideDownRotation = Surface.ROTATION_180;
-            if (res.getBoolean(com.android.internal.R.bool.config_reverseDefaultRotation)) {
-                mLandscapeRotation = Surface.ROTATION_270;
-                mSeascapeRotation = Surface.ROTATION_90;
-            } else {
+            if (rotation == 0) {
+                mPortraitRotation = Surface.ROTATION_0;
+                mUpsideDownRotation = Surface.ROTATION_180;
+            } else if (rotation == 180) {
+                mPortraitRotation = Surface.ROTATION_180;
+                mUpsideDownRotation = Surface.ROTATION_0;
+            } else if (rotation == 90) {
                 mLandscapeRotation = Surface.ROTATION_90;
                 mSeascapeRotation = Surface.ROTATION_270;
+            } else if (rotation == 270) {
+                mLandscapeRotation = Surface.ROTATION_270;
+                mSeascapeRotation = Surface.ROTATION_90;
+            }
+
+            if (rotation == 0 || rotation == 180) {
+                if (res.getBoolean(com.android.internal.R.bool.config_reverseDefaultRotation)) {
+                    mLandscapeRotation = Surface.ROTATION_270;
+                    mSeascapeRotation = Surface.ROTATION_90;
+                } else {
+                    mLandscapeRotation = Surface.ROTATION_90;
+                    mSeascapeRotation = Surface.ROTATION_270;
+                }
+            }
+
+            if (rotation == 90 || rotation == 270) {
+                if (res.getBoolean(com.android.internal.R.bool.config_reverseDefaultRotation)) {
+                    mPortraitRotation = Surface.ROTATION_0;
+                    mUpsideDownRotation = Surface.ROTATION_180;
+                } else {
+                    mPortraitRotation = Surface.ROTATION_180;
+                    mUpsideDownRotation = Surface.ROTATION_0;
+                }
             }
         }
 
