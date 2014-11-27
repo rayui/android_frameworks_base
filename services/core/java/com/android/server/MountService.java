@@ -730,7 +730,8 @@ class MountService extends IMountService.Stub
 
         // Tell PackageManager about changes to primary volume state, but only
         // when not emulated.
-        if (volume.isPrimary() && !volume.isEmulated()) {
+        // now only support sdcard not udist
+        if (volume.getPath().indexOf("sdcard") != -1 && !volume.isEmulated())  {
             if (Environment.MEDIA_UNMOUNTED.equals(state)) {
                 mPms.updateExternalMediaStatus(false, false);
 
@@ -1950,11 +1951,12 @@ class MountService extends IMountService.Stub
             }
         }
 
-        if (rc == StorageResultCode.OperationSucceeded) {
+        // external volume was aleady unmounted by vold, So result code is failed
+        //if (rc == StorageResultCode.OperationSucceeded) {
             synchronized (mAsecMountSet) {
                 mAsecMountSet.remove(id);
             }
-        }
+        //}
         return rc;
     }
 

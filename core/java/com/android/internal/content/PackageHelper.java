@@ -377,7 +377,7 @@ public class PackageHelper {
             checkBoth = false;
         }
 
-        final boolean emulated = Environment.isExternalStorageEmulated();
+        boolean emulated = Environment.isExternalStorageEmulated();
         final StorageManager storage = StorageManager.from(context);
 
         boolean fitsOnInternal = false;
@@ -387,12 +387,24 @@ public class PackageHelper {
         }
 
         boolean fitsOnExternal = false;
-        if (!emulated && (checkBoth || prefer == RECOMMEND_INSTALL_EXTERNAL)) {
-            final File target = new UserEnvironment(UserHandle.USER_OWNER)
-                    .getExternalStorageDirectory();
+        if (checkBoth || prefer == RECOMMEND_INSTALL_EXTERNAL) {
+            final File[] target = new UserEnvironment(UserHandle.USER_OWNER)
+                    .getExternalDirsForApp();
             // External is only an option when size is known
             if (sizeBytes > 0) {
-                fitsOnExternal = (sizeBytes <= storage.getStorageBytesUntilLow(target));
+                for (File targetFile : target) {
+                    /*
+                     * To check whether the device has a real external storage,
+                     * We should use {@link#Environment.isExternalStorageRemovable(File path)} to check.
+                     * Fix me, now Only support app2sd on SDcard, not usb storage
+                     */
+                    if ((targetFile.getAbsolutePath().indexOf("sdcard") != -1) &&
+                            Environment.isExternalStorageRemovable(targetFile)) {
+                        fitsOnExternal = (sizeBytes <= storage.getStorageBytesUntilLow(targetFile));
+                        emulated = false;
+                        break;
+                    }
+               }
             }
         }
 

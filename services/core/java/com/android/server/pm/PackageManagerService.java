@@ -12722,6 +12722,43 @@ public class PackageManagerService extends IPackageManager.Stub {
         }
     }
 
+    private String[] getSecureAsecList() {
+        ArrayList<PackageInfo> list;
+
+        synchronized (mPackages) {
+            list = new ArrayList<PackageInfo>(mPackages.size());
+            for (PackageParser.Package p : mPackages.values()) {
+                PackageInfo pi = generatePackageInfo(p, 0, UserHandle.USER_OWNER);
+                if (pi != null) {
+                    list.add(pi);
+                }
+            }
+        }
+
+        ArrayList<String> externalPkgList = new ArrayList<String>();
+        if (list != null) {
+            for (int i = 0; i< list.size(); i++ ) {
+               String path = list.get(i).applicationInfo.sourceDir;
+               if (path != null && (path.startsWith("/mnt/asec/"))) {
+                    if (DEBUG_SD_INSTALL)
+                        Log.v(TAG, "asec path: " + path);
+
+                    String str = path.substring("/mnt/asec/".length());
+                    String dir = str.substring(0, str.indexOf("/"));
+                    externalPkgList.add(dir);
+               }
+           }
+        }
+
+        if (externalPkgList.size() > 0) {
+            String[] strs = new String[externalPkgList.size()];
+            return externalPkgList.toArray(strs);
+        } else {
+            Log.v(TAG, "getSecureAsecList is null ");
+            return null;
+        }
+    }
+
     /*
      * Collect information of applications on external media, map them against
      * existing containers and update information based on current mount status.
@@ -12733,7 +12770,14 @@ public class PackageManagerService extends IPackageManager.Stub {
         ArrayMap<AsecInstallArgs, String> processCids = new ArrayMap<>();
         int[] uidArr = EmptyArray.INT;
 
-        final String[] list = PackageHelper.getSecureContainerList();
+        String[] list = PackageHelper.getSecureContainerList();
+        if (ArrayUtils.isEmpty(list)) {
+            // We will not get secure containerList from VOLD, when the volume
+            // was unmounted. So get it from mPackages.
+            if (!isMounted)
+                list = getSecureAsecList();
+        }
+
         if (ArrayUtils.isEmpty(list)) {
             Log.i(TAG, "No secure containers found");
         } else {
