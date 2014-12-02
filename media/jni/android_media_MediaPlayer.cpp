@@ -534,6 +534,20 @@ android_media_MediaPlayer_setParameter(JNIEnv *env, jobject thiz, jint key, jobj
 }
 
 static void
+android_media_MediaPlayer_getParameter(JNIEnv *env, jobject thiz, jint key, jobject java_reply)
+{
+    ALOGV("getParameter: key %d", key);
+    sp<MediaPlayer> mp = getMediaPlayer(env, thiz);
+    if (mp == NULL ) {
+        jniThrowException(env, "java/lang/IllegalStateException", NULL);
+        return;
+    }
+
+    Parcel *reply = parcelForJavaObject(env, java_reply);
+    process_media_player_call(env, thiz, mp->getParameter(key, reply), NULL, NULL );
+}
+
+static void
 android_media_MediaPlayer_setLooping(JNIEnv *env, jobject thiz, jboolean looping)
 {
     ALOGV("setLooping: %d", looping);
@@ -877,6 +891,7 @@ static JNINativeMethod gMethods[] = {
     {"_setAudioStreamType", "(I)V",                             (void *)android_media_MediaPlayer_setAudioStreamType},
     {"_getAudioStreamType", "()I",                              (void *)android_media_MediaPlayer_getAudioStreamType},
     {"setParameter",        "(ILandroid/os/Parcel;)Z",          (void *)android_media_MediaPlayer_setParameter},
+    {"getParameter",        "(ILandroid/os/Parcel;)V",          (void *)android_media_MediaPlayer_getParameter},
     {"setLooping",          "(Z)V",                             (void *)android_media_MediaPlayer_setLooping},
     {"isLooping",           "()Z",                              (void *)android_media_MediaPlayer_isLooping},
     {"_setVolume",          "(FF)V",                            (void *)android_media_MediaPlayer_setVolume},
