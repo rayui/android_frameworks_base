@@ -197,6 +197,7 @@ public class MediaFile {
         addFileType("OGA", FILE_TYPE_OGG, "application/ogg", MtpConstants.FORMAT_OGG);
         addFileType("AAC", FILE_TYPE_AAC, "audio/aac", MtpConstants.FORMAT_AAC);
         addFileType("AAC", FILE_TYPE_AAC, "audio/aac-adts", MtpConstants.FORMAT_AAC);
+        addFileType("AAC", FILE_TYPE_AAC, "audio/aac-adif", MtpConstants.FORMAT_AAC);
         addFileType("MKA", FILE_TYPE_MKA, "audio/x-matroska");
         addFileType("3GPP", FILE_TYPE_AUDIO_3GPP, "video/3gpp");
         addFileType("TTA", FILE_TYPE_TTA, "audio/tta");
