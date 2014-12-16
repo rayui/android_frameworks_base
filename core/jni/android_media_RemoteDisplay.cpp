@@ -65,11 +65,17 @@ public:
             uint32_t width, uint32_t height, uint32_t flags, uint32_t session) {
         JNIEnv* env = AndroidRuntime::getJNIEnv();
 
-        jobject surfaceObj = android_view_Surface_createFromIGraphicBufferProducer(env, bufferProducer);
-        if (surfaceObj == NULL) {
-            ALOGE("Could not create Surface from surface texture %p provided by media server.",
-                  bufferProducer.get());
-            return;
+        jobject surfaceObj = NULL;
+
+        if (bufferProducer != NULL) {
+            surfaceObj = android_view_Surface_createFromIGraphicBufferProducer(env, bufferProducer);
+            if (surfaceObj == NULL) {
+                ALOGE("Could not create Surface from surface texture %p provided by media server.",
+                      bufferProducer.get());
+                    return;
+            }
+        } else {
+            ALOGI("surface texture is null");
         }
 
         env->CallVoidMethod(mRemoteDisplayObjGlobal,
