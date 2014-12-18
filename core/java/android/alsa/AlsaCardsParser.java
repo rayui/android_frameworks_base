@@ -37,6 +37,7 @@ public class AlsaCardsParser {
         public String mField1 = "";
         public String mCardName = "";
         public String mCardDescription = "";
+        public int mCard = -1;
 
         public AlsaCardRecord() {}
 
@@ -47,6 +48,7 @@ public class AlsaCardsParser {
                 // line # (skip)
                 tokenIndex = tokenizer_.nextToken(line, tokenIndex);
                 delimIndex = tokenizer_.nextDelimiter(line, tokenIndex);
+                mCard = Integer.parseInt(line.substring(tokenIndex, delimIndex));
 
                 // mField1
                 tokenIndex = tokenizer_.nextToken(line, delimIndex);
@@ -87,7 +89,9 @@ public class AlsaCardsParser {
                   AlsaCardRecord cardRecord = new AlsaCardRecord();
                   cardRecord.parse(line, 0);
                   cardRecord.parse(line = bufferedReader.readLine(), 1);
-                  cardRecords_.add(cardRecord);
+                  // AML only record the USB audio card
+                  if (cardRecord.mCardName.indexOf("USB-Audio") >= 0)
+                      cardRecords_.add(cardRecord);
               }
               reader.close();
           } catch (FileNotFoundException e) {
@@ -105,6 +109,9 @@ public class AlsaCardsParser {
           return cardRecords_.size();
       }
 
+    public int getCardIndex(int index) {
+        return getCardRecordAt(index).mCard;
+    }
     public void Log() {
       int numCardRecs = getNumCardRecords();
       for (int index = 0; index < numCardRecs; ++index) {

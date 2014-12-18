@@ -312,7 +312,10 @@ public class UsbHostManager {
 
         // The protocol for now will be to select the last-connected (highest-numbered)
         // Alsa Card.
-        mConnectedUsbCard = cardsParser.getNumCardRecords() - 1;
+        // AML use the protocal to select the saved card but not the last-connected one; because
+        // the last one may be other kind of card
+        mConnectedUsbCard = cardsParser.getCardIndex(cardsParser.getNumCardRecords() - 1);
+        //mConnectedUsbCard = cardsParser.getNumCardRecords() - 1;
         mConnectedUsbDeviceNum = 0;
 
         mConnectedHasPlayback = devicesParser.hasPlaybackDevices(mConnectedUsbCard);
