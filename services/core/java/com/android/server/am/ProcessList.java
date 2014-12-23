@@ -287,11 +287,54 @@ final class ProcessList {
         }
 
         if (write) {
+            int[] cfgOomMinFree = null;
+            int[] cfgOomAdj = null;
+
+            try{
+                java.io.BufferedReader br = new java.io.BufferedReader(new java.io.InputStreamReader(
+                    new java.io.FileInputStream("/system/etc/lowmemorykiller.txt")));
+                String line = "";
+                while ((line = br.readLine()) != null) {
+                    if (line.startsWith("#")) {//skip this line
+                        continue;
+                    }
+                    else if (line.startsWith("adj:")) {
+                        String str = line.substring("adj:".length());
+                        if (str.split(",").length == mOomAdj.length) {
+                            cfgOomAdj = new int[mOomAdj.length];
+                            for (int i = 0; i < mOomAdj.length; i++)
+                                cfgOomAdj[i] = Integer.parseInt(str.split(",")[i]);
+
+                            Slog.i("XXXXXXX", "adjConfigString: " + str);
+                        }
+                    }
+                    else if (line.startsWith("minfree:")) {
+                        String str = line.substring("minfree:".length());
+                        if (str.split(",").length == mOomAdj.length) {
+                            cfgOomMinFree = new int[mOomAdj.length];
+                            for (int i = 0; i < mOomAdj.length; i++)
+                                cfgOomMinFree[i] = Integer.parseInt(str.split(",")[i]);
+
+                            Slog.i("XXXXXXX", "minfreeConfigString: " + str);
+                        }
+                    }
+                }
+                br.close();
+            } catch (java.io.FileNotFoundException ex) {
+            } catch (java.io.IOException ex) {
+            }
+
             ByteBuffer buf = ByteBuffer.allocate(4 * (2*mOomAdj.length + 1));
             buf.putInt(LMK_TARGET);
             for (int i=0; i<mOomAdj.length; i++) {
-                buf.putInt((mOomMinFree[i]*1024)/PAGE_SIZE);
-                buf.putInt(mOomAdj[i]);
+                if ((null != cfgOomMinFree) && (null != cfgOomAdj)) {
+                    buf.putInt(cfgOomMinFree[i]);
+                    buf.putInt(cfgOomAdj[i]);
+                }
+                else {
+                    buf.putInt((mOomMinFree[i]*1024)/PAGE_SIZE);
+                    buf.putInt(mOomAdj[i]);
+                }
             }
 
             writeLmkd(buf);
