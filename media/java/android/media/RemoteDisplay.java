@@ -44,6 +44,7 @@ public final class RemoteDisplay {
     private native void nativeDispose(long ptr);
     private native void nativePause(long ptr);
     private native void nativeResume(long ptr);
+    private native void nativeSetRotation(int ptr, int degree);
 
     private RemoteDisplay(Listener listener, Handler handler) {
         mListener = listener;
@@ -87,6 +88,12 @@ public final class RemoteDisplay {
      */
     public void dispose() {
         dispose(false);
+    }
+
+    public void setRotation(int degree) {
+        if (mPtr != 0) {
+            nativeSetRotation((int)mPtr, degree);
+        }
     }
 
     public void pause() {

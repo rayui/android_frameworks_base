@@ -124,6 +124,10 @@ public:
         mDisplay->dispose();
     }
 
+    sp<IRemoteDisplay> getDisplay() {
+        return mDisplay;
+    }
+
     void pause() {
         mDisplay->pause();
     }
@@ -179,6 +183,10 @@ static void nativeDispose(JNIEnv* env, jobject remoteDisplayObj, jlong ptr) {
     delete wrapper;
 }
 
+static void nativeSetRotation(JNIEnv* env, jobject remoteDisplayObj, jint ptr, jint degree) {
+    NativeRemoteDisplay* wrapper = reinterpret_cast<NativeRemoteDisplay*>(ptr);
+    wrapper->getDisplay()->setRotation(degree);
+}
 // ----------------------------------------------------------------------------
 
 static JNINativeMethod gMethods[] = {
@@ -190,6 +198,8 @@ static JNINativeMethod gMethods[] = {
             (void*)nativePause },
     {"nativeResume", "(J)V",
             (void*)nativeResume },
+    {"nativeSetRotation", "(II)V",
+            (void*)nativeSetRotation },
 };
 
 int register_android_media_RemoteDisplay(JNIEnv* env)
