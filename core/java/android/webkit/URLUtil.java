@@ -360,6 +360,8 @@ public final class URLUtil {
                 }
             }
         } else {
+            //for path already has extention, use it directlly.
+            /*
             if (mimeType != null) {
                 // Compare the last segment of the extension against the mime type.
                 // If there's a mismatch, discard the entire extension.
@@ -373,6 +375,7 @@ public final class URLUtil {
                     }
                 }
             }
+            */
             if (extension == null) {
                 extension = filename.substring(dotIndex);
             }
