@@ -390,7 +390,7 @@ public class ConnectivityManager {
      */
     public static final int TYPE_MOBILE_IA = 14;
 
-/**
+    /**
      * Emergency PDN connection for emergency calls
      * {@hide}
      */
@@ -408,11 +408,17 @@ public class ConnectivityManager {
      */
     public static final int TYPE_VPN = 17;
 
-    /** {@hide} */
-    public static final int MAX_RADIO_TYPE   = TYPE_VPN;
+    /**
+     * The network that uses pppoe to connectivity.
+     * {@hide}
+     */
+    public static final int TYPE_PPPOE = 18;
 
     /** {@hide} */
-    public static final int MAX_NETWORK_TYPE = TYPE_VPN;
+    public static final int MAX_RADIO_TYPE = TYPE_PPPOE;
+
+    /** {@hide} */
+    public static final int MAX_NETWORK_TYPE = TYPE_PPPOE;
 
     /**
      * If you want to set the default network preference,you can directly

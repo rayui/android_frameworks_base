@@ -22,6 +22,7 @@ import static android.net.ConnectivityManager.CONNECTIVITY_ACTION;
 import static android.net.ConnectivityManager.CONNECTIVITY_ACTION_IMMEDIATE;
 import static android.net.ConnectivityManager.TYPE_BLUETOOTH;
 import static android.net.ConnectivityManager.TYPE_DUMMY;
+import static android.net.ConnectivityManager.TYPE_PPPOE;
 import static android.net.ConnectivityManager.TYPE_MOBILE;
 import static android.net.ConnectivityManager.TYPE_MOBILE_MMS;
 import static android.net.ConnectivityManager.TYPE_MOBILE_SUPL;
@@ -87,6 +88,8 @@ import android.net.SamplingDataTracker;
 import android.net.UidRange;
 import android.net.Uri;
 import android.net.wimax.WimaxManagerConstants;
+import com.droidlogic.pppoe.PppoeStateTracker;
+import com.droidlogic.pppoe.PppoeService;
 import android.os.AsyncTask;
 import android.os.Binder;
 import android.os.Build;
@@ -215,7 +218,7 @@ public class ConnectivityService extends IConnectivityManager.Stub {
     private static final int SAMPLE_INTERVAL_ELAPSED_REQUEST_CODE = 0;
 
     private PendingIntent mSampleIntervalElapsedIntent;
-
+    private static final String PPPOE_SERVICE = "pppoe";
     // Set network sampling interval at 12 minutes, this way, even if the timers get
     // aggregated, it will fire at around 15 minutes, which should allow us to
     // aggregate this timer with other timers (specially the socket keep alive timers)
@@ -253,7 +256,7 @@ public class ConnectivityService extends IConnectivityManager.Stub {
      * abstractly.
      */
     private NetworkStateTracker mNetTrackers[];
-
+    private int[] mPriorityList = null;
     private Context mContext;
     private int mNetworkPreference;
     private int mActiveDefaultNetwork = TYPE_NONE;
@@ -609,6 +612,7 @@ public class ConnectivityService extends IConnectivityManager.Stub {
         handlerThread.start();
         mHandler = new InternalHandler(handlerThread.getLooper());
         mTrackerHandler = new NetworkStateTrackerHandler(handlerThread.getLooper());
+        NetworkFactory netFactory = new DefaultNetworkFactory(context, mTrackerHandler);
 
         // setup our unique device name
         if (TextUtils.isEmpty(SystemProperties.get("net.hostname"))) {
@@ -701,6 +705,58 @@ public class ConnectivityService extends IConnectivityManager.Stub {
                 if (DBG) loge("Ignoring protectedNetwork " + p);
             }
         }
+        // high priority first
+        mPriorityList = new int[mNetworksDefined];
+        int insertionPoint = mNetworksDefined-1;
+        int currentLowest = 0;
+        int nextLowest = 0;
+        while (insertionPoint > -1) {
+            for (NetworkConfig na : mNetConfigs) {
+                if (na == null) continue;
+                    if (na.priority < currentLowest) continue;
+                    if (na.priority > currentLowest) {
+                        if (na.priority < nextLowest || nextLowest == 0) {
+                            nextLowest = na.priority;
+                    }
+                    continue;
+                }
+                mPriorityList[insertionPoint--] = na.type;
+            }
+            currentLowest = nextLowest;
+            nextLowest = 0;
+        }
+        for (int targetNetworkType : mPriorityList) {
+            final NetworkConfig config = mNetConfigs[targetNetworkType];
+            final NetworkStateTracker tracker;
+            final NetworkStateTracker pppoetracker;
+            try {
+                    tracker = netFactory.createTracker(targetNetworkType, config);
+                    mNetTrackers[targetNetworkType] = tracker;
+                    Slog.d(TAG, "targetNetworkType="+targetNetworkType);
+                    if (targetNetworkType == ConnectivityManager.TYPE_PPPOE) {
+                        pppoetracker = netFactory.createTracker(targetNetworkType, config);
+                        mNetTrackers[targetNetworkType] = pppoetracker;
+                        PppoeService pppoe = new PppoeService(context, (PppoeStateTracker)pppoetracker);
+                        Slog.d(TAG, "start add service pppoe");
+                        ServiceManager.addService(PPPOE_SERVICE, pppoe);
+                        Slog.d(TAG, "end add service pppoe");
+                        pppoetracker.startMonitoring(context, mTrackerHandler);
+                        if (config.isDefault()) {
+                            pppoetracker.reconnect();
+                    }
+                }
+            } catch (IllegalArgumentException e) {
+                Slog.e(TAG, "Problem creating " + getNetworkTypeName(targetNetworkType)
+                                + " tracker: " + e);
+                continue;
+            }
+            tracker.startMonitoring(context, mTrackerHandler);
+            if (config.isDefault()) {
+                    tracker.reconnect();
+            }
+        }
+
+
 
         mTestMode = SystemProperties.get("cm.test.mode").equals("true")
                 && SystemProperties.get("ro.build.type").equals("eng");
@@ -740,22 +796,50 @@ public class ConnectivityService extends IConnectivityManager.Stub {
         IntentFilter filter = new IntentFilter();
         filter.addAction(ACTION_PKT_CNT_SAMPLE_INTERVAL_ELAPSED);
         mContext.registerReceiver(
-                new BroadcastReceiver() {
-                    @Override
-                    public void onReceive(Context context, Intent intent) {
-                        String action = intent.getAction();
-                        if (action.equals(ACTION_PKT_CNT_SAMPLE_INTERVAL_ELAPSED)) {
-                            mHandler.sendMessage(mHandler.obtainMessage
-                                    (EVENT_SAMPLE_INTERVAL_ELAPSED));
-                        }
+            new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context context, Intent intent) {
+                    String action = intent.getAction();
+                    if (action.equals(ACTION_PKT_CNT_SAMPLE_INTERVAL_ELAPSED)) {
+                        mHandler.sendMessage(mHandler.obtainMessage
+                            (EVENT_SAMPLE_INTERVAL_ELAPSED));
                     }
-                },
-                new IntentFilter(filter));
+                }
+            },
+            new IntentFilter(filter));
 
         mPacManager = new PacManager(mContext, mHandler, EVENT_PROXY_HAS_CHANGED);
 
         mUserManager = (UserManager) context.getSystemService(Context.USER_SERVICE);
     }
+
+    public interface NetworkFactory {
+        public NetworkStateTracker createTracker(int targetNetworkType, NetworkConfig config);
+    }
+
+    private class DefaultNetworkFactory implements NetworkFactory {
+        private final Context mContext;
+        private final Handler mTrackerHandler;
+
+        public DefaultNetworkFactory(Context context, Handler trackerHandler) {
+            mContext = context;
+            mTrackerHandler = trackerHandler;
+        }
+
+        @Override
+        public NetworkStateTracker createTracker(int targetNetworkType, NetworkConfig config) {
+            switch (config.radio) {
+                case TYPE_PPPOE:
+                    loge("Start registering TYPE_PPPOE observer :" + config.name);
+                    return new PppoeStateTracker(mHandler.getLooper(),targetNetworkType, config.name);
+                default:
+                    throw new IllegalArgumentException(
+                            "Trying to create a NetworkStateTracker for an unknown radio type: "
+                            + config.radio);
+            }
+        }
+    }
+
 
     private synchronized int nextNetworkRequestId() {
         return mNextNetworkRequestId++;
@@ -1843,7 +1927,8 @@ public class ConnectivityService extends IConnectivityManager.Stub {
                         synchronized (nai) {
                             nai.linkProperties = (LinkProperties)msg.obj;
                         }
-                        if (nai.created) updateLinkProperties(nai, oldLp);
+                        if (nai.created)
+                                updateLinkProperties(nai, oldLp);
                     }
                     break;
                 }
@@ -1912,7 +1997,7 @@ public class ConnectivityService extends IConnectivityManager.Stub {
                     if (isLiveNetworkAgent(nai, "EVENT_NETWORK_VALIDATED")) {
                         boolean valid = (msg.arg1 == NetworkMonitor.NETWORK_TEST_RESULT_VALID);
                         if (valid) {
-                            if (DBG) log("Validated " + nai.name());
+                            if (DBG) log("Validated EVENT_NETWORK_TESTED" + nai.name());
                             final boolean previouslyValidated = nai.validated;
                             final int previousScore = nai.getCurrentScore();
                             nai.validated = true;
@@ -3623,7 +3708,7 @@ public class ConnectivityService extends IConnectivityManager.Stub {
         // do this twice, adding non-nexthop routes first, then routes they are dependent on
         for (RouteInfo route : routeDiff.added) {
             if (route.hasGateway()) continue;
-            if (DBG) log("Adding Route [" + route + "] to network " + netId);
+            if (DBG) log("hasGateway Adding Route [" + route + "] to network " + netId);
             try {
                 mNetd.addRoute(netId, route);
             } catch (Exception e) {
@@ -3634,7 +3719,7 @@ public class ConnectivityService extends IConnectivityManager.Stub {
         }
         for (RouteInfo route : routeDiff.added) {
             if (route.hasGateway() == false) continue;
-            if (DBG) log("Adding Route [" + route + "] to network " + netId);
+            if (DBG) log("noGateway Adding Route [" + route + "] to network " + netId);
             try {
                 mNetd.addRoute(netId, route);
             } catch (Exception e) {
@@ -3859,7 +3944,7 @@ public class ConnectivityService extends IConnectivityManager.Stub {
             // check if it satisfies the NetworkCapabilities
             if (VDBG) log("  checking if request is satisfied: " + nri.request);
             if (nri.request.networkCapabilities.satisfiedByNetworkCapabilities(
-                    newNetwork.networkCapabilities)) {
+                    newNetwork.networkCapabilities)||true) {
                 if (!nri.isRequest) {
                     // This is not a request, it's a callback listener.
                     // Add it to newNetwork regardless of score.
@@ -3875,7 +3960,7 @@ public class ConnectivityService extends IConnectivityManager.Stub {
                             ", newScore = " + newNetwork.getCurrentScore());
                 }
                 if (currentNetwork == null ||
-                        currentNetwork.getCurrentScore() < newNetwork.getCurrentScore()) {
+                        currentNetwork.getCurrentScore() <= newNetwork.getCurrentScore()) {
                     if (currentNetwork != null) {
                         if (DBG) log("   accepting network in place of " + currentNetwork.name());
                         currentNetwork.networkRequests.remove(nri.request.requestId);
@@ -3948,6 +4033,7 @@ public class ConnectivityService extends IConnectivityManager.Stub {
                 if (VDBG) log("Lingered for " + nai.name() + " cleared");
             }
         }
+
         if (keep) {
             if (isNewDefault) {
                 // Notify system services that this network is up.
