@@ -59,9 +59,13 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Locale;
 import java.util.TimeZone;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
+import java.io.BufferedReader;
 
 import static android.app.AlarmManager.RTC_WAKEUP;
 import static android.app.AlarmManager.RTC;
@@ -93,12 +97,15 @@ class AlarmManagerService extends SystemService {
     static final boolean DEBUG_ALARM_CLOCK = localLOGV || false;
     static final int ALARM_EVENT = 1;
     static final String TIMEZONE_PROPERTY = "persist.sys.timezone";
+    final ArrayList<AppBlacklistItem> mAppBlacklist = new ArrayList<AppBlacklistItem>();
+    final ArrayList<String> mAppWhitelist = new ArrayList<String>();
 
     static final Intent mBackgroundIntent
             = new Intent().addFlags(Intent.FLAG_FROM_BACKGROUND);
     static final IncreasingTimeOrder sIncreasingTimeOrder = new IncreasingTimeOrder();
     
     static final boolean WAKEUP_STATS = false;
+    static boolean mIsMboxMode = false;
 
     private static final Intent NEXT_ALARM_CLOCK_CHANGED_INTENT = new Intent(
             AlarmManager.ACTION_NEXT_ALARM_CLOCK_CHANGED);
@@ -625,6 +632,46 @@ class AlarmManagerService extends SystemService {
         }
 
         publishBinderService(Context.ALARM_SERVICE, mService);
+        String isMboxMode = SystemProperties.get("ro.platform.has.mbxuimode", "false");
+        if (isMboxMode.equals("true")) {
+            mIsMboxMode = true;
+        }
+        if (mIsMboxMode) {
+            try{
+                BufferedReader br = new BufferedReader(new InputStreamReader(
+                            new FileInputStream("/system/etc/alarm_whitelist.txt")));
+
+                String line ="";
+                while ((line = br.readLine()) != null) {
+                    if (localLOGV)  Log.d(TAG, "white alarm" +line);
+                    mAppWhitelist.add(line);
+                }
+
+                br.close();
+            }catch(java.io.FileNotFoundException ex){
+                Slog.w(TAG, "alarm_whitelist.txt is not found in /etc/");
+            }catch(java.io.IOException ex){
+            }
+        } else {
+            try {
+                BufferedReader br = new BufferedReader(new InputStreamReader(
+                            new FileInputStream("/system/etc/alarm_blacklist.txt")));
+
+                String line ="";
+                AppBlacklistItem backitem= null;
+                while ((line = br.readLine()) != null) {
+                    if (localLOGV) Log.d(TAG, "black alarm" +line);
+                    String nametype[] = line.split(":");
+                    backitem = new AppBlacklistItem(nametype[0], nametype[1]);
+                    mAppBlacklist.add(backitem);
+                }
+
+                br.close();
+            } catch(java.io.FileNotFoundException ex) {
+                Slog.w(TAG, "alarm_blacklist.txt is not found in /etc/");
+            } catch(java.io.IOException ex) {
+            }
+        }
     }
 
     @Override
@@ -737,7 +784,46 @@ class AlarmManagerService extends SystemService {
             long maxWhen, long interval, PendingIntent operation, boolean isStandalone,
             boolean doValidate, WorkSource workSource, AlarmManager.AlarmClockInfo alarmClock,
             int userId) {
-        Alarm a = new Alarm(type, when, whenElapsed, windowLength, maxWhen, interval,
+        int newType = type;
+        String targetPackage = null;
+        targetPackage = operation.getTargetPackage();
+        if (type == AlarmManager.RTC_WAKEUP || type == AlarmManager.ELAPSED_REALTIME_WAKEUP) {
+            if (targetPackage != null) {
+                if (mIsMboxMode) {
+                    Slog.v(TAG,"dgt," + targetPackage + " set alarm type:" + type);
+                    boolean isInWhitelist = false;
+                    Iterator<String> it = mAppWhitelist.iterator();
+                    while (it.hasNext()) {
+                        String whitelisItem = it.next();
+                        if (whitelisItem.equals(targetPackage)) {
+                            Slog.v(TAG, targetPackage + " in whitelist");
+                            isInWhitelist = true;
+                            break;
+                        }
+                    }
+                    if (!isInWhitelist) {
+                        if ( AlarmManager.RTC_WAKEUP== type ) newType = AlarmManager.RTC;
+                        if ( AlarmManager.ELAPSED_REALTIME_WAKEUP== type ) newType = AlarmManager.ELAPSED_REALTIME;
+                    }
+                } else {
+                    Iterator<AppBlacklistItem> it = mAppBlacklist.iterator();
+                    while (it.hasNext()) {
+                        AppBlacklistItem blacklisItem = it.next();
+                        if (blacklisItem.name.equals(targetPackage)) {
+                            Slog.v(TAG, targetPackage + " in blacklist, type is "+blacklisItem.type );
+                            if (blacklisItem.type == AppBlacklistItem.REMOVE) {
+                                return;
+                            } else {
+                                if ( AlarmManager.RTC_WAKEUP== type ) newType = AlarmManager.RTC;
+                                if ( AlarmManager.ELAPSED_REALTIME_WAKEUP== type ) newType = AlarmManager.ELAPSED_REALTIME;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        Alarm a = new Alarm(newType, when, whenElapsed, windowLength, maxWhen, interval,
                 operation, workSource, alarmClock, userId);
         removeLocked(operation);
 
@@ -760,7 +846,6 @@ class AlarmManagerService extends SystemService {
             mNextAlarmClockMayChange = true;
             updateNextAlarmClockLocked();
         }
-
         if (DEBUG_VALIDATE) {
             if (doValidate && !validateConsistencyLocked()) {
                 Slog.v(TAG, "Tipping-point operation: type=" + type + " when=" + when
@@ -1024,6 +1109,15 @@ class AlarmManagerService extends SystemService {
                     pw.println();
                 }
                 pw.println();
+            }
+            if (mIsMboxMode) {
+                pw.println();
+                pw.println("  App Alarm Whitelist:");
+                dumpWhiteList(pw);
+            } else {
+                pw.println();
+                pw.println("  App Alarm Blacklist:");
+                dumpBlackList(pw);
             }
         }
     }
@@ -1381,6 +1475,27 @@ class AlarmManagerService extends SystemService {
         }
     }
 
+    private  final void dumpBlackList(PrintWriter pw) {
+        for (int i=mAppBlacklist.size()-1; i>=0; i--) {
+            AppBlacklistItem a = mAppBlacklist.get(i);
+            pw.print(" #");
+            pw.print(i);
+            pw.print(": ");
+            a.dump(pw);
+        }
+    }
+
+    private  final void dumpWhiteList(PrintWriter pw) {
+        for (int i=mAppWhitelist.size()-1; i >= 0; i--) {
+            String a = mAppWhitelist.get(i);
+            pw.print(" #");
+            pw.print(i);
+            pw.print(": ");
+            pw.print(" name=");
+            pw.println(a);
+        }
+    }
+
     private native long init();
     private native void close(long nativeData);
     private native void set(long nativeData, int type, long seconds, long nanoseconds);
@@ -1467,6 +1582,50 @@ class AlarmManagerService extends SystemService {
                 return -1;
             }
             return 0;
+        }
+    }
+
+    private static class AppBlacklistItem{
+        public int type;
+        public String name;
+
+        public static final int REPlACE = 0;     //replace with non-wakeup alarm
+        public static final int REMOVE = 1;     //remove this alarm
+
+        public AppBlacklistItem(){
+            type = REMOVE;
+            name = null;
+        }
+
+        public AppBlacklistItem(String inName, String inType){
+            name = inName;
+            if ("remove".equals(inType))
+                type = REMOVE;
+            else
+                type = REPlACE;
+        }
+
+        @Override
+        public String toString()
+        {
+            StringBuilder sb = new StringBuilder(128);
+            sb.append("AppBlacklistItem{");
+            sb.append(Integer.toHexString(System.identityHashCode(this)));
+            sb.append(" type ");
+            sb.append(type);
+            sb.append(" ");
+            sb.append(name);
+            sb.append('}');
+            return sb.toString();
+        }
+
+        public void dump(PrintWriter pw) {
+            pw.print(" type=");
+            if (REPlACE == type)
+                pw.print(" REPLACE");
+            else
+                pw.print(" REMOVE");
+            pw.print(" name="); pw.println(name);
         }
     }
     
