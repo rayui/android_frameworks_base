@@ -238,6 +238,10 @@ public final class SystemServer {
         System.loadLibrary("android_servers");
         nativeInit();
 
+        if (SystemProperties.getBoolean("ro.app.optimization", false)) {
+            System.loadLibrary("optimization");
+        }
+
         // Check whether we failed to shut down last time we tried.
         // This call may not return.
         performPendingShutdown();

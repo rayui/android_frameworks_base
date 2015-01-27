@@ -1110,6 +1110,8 @@ final class ActivityStack {
             // When resuming an activity, require it to call requestVisibleBehind() again.
             mActivityContainer.mActivityDisplay.setVisibleBehindActivity(null);
         }
+
+        droidlogicOptimiztion(next);
     }
 
     private void setVisibile(ActivityRecord r, boolean visible) {
@@ -1792,6 +1794,7 @@ final class ActivityStack {
             updateLRUListLocked(next);
             mService.updateOomAdjLocked();
 
+            droidlogicOptimiztion(next);
             // Have the window manager re-evaluate the orientation of
             // the screen based on the new activity order.
             boolean notUpdated = true;
@@ -4154,5 +4157,41 @@ final class ActivityStack {
     public String toString() {
         return "ActivityStack{" + Integer.toHexString(System.identityHashCode(this))
                 + " stackId=" + mStackId + ", " + mTaskHistory.size() + " tasks}";
+    }
+
+    private native int nativeOptimization(ActivityRecord next, String clsName, String[] runPkgName);
+    private native int nativeOptimization(ActivityRecord next, String clsName, String url, String[] runPkgName);
+    private String[] getRunningPackages() {
+        ActivityManager am = (ActivityManager)mService.mContext.getSystemService(Activity.ACTIVITY_SERVICE);
+        List list = am.getRunningTasks(100);
+        int N = (list != null) ? list.size() : -1;
+        if (N > 0) {
+            String[] runPkgNames = new String[N];
+            for (int i = 0; i < N; i++) {
+                ActivityManager.RunningTaskInfo info = (ActivityManager.RunningTaskInfo)list.get(i);
+                runPkgNames[i] = info.baseActivity.getPackageName();
+            }
+            return runPkgNames;
+        }
+
+        return null;
+    }
+
+    private void droidlogicOptimiztion(ActivityRecord next) {
+        if (android.os.SystemProperties.getBoolean("ro.app.optimization", false)) {
+            String curPkgName = next.packageName;
+            String curClassName = next.realActivity.getClassName();
+
+            if (!(curPkgName.equals("com.android.cts.stub") &&
+                (curClassName.startsWith("android.app.cts") || curClassName.startsWith("android.view.animation.cts")))) {
+
+                String[] runningPackages = getRunningPackages();
+                int ret = nativeOptimization(next, curClassName, getRunningPackages());
+                if (ret >= 0) {
+                    mService.killAllBackgroundProcesses();
+                    //killBackgroundProcess();
+                }
+            }
+        }
     }
 }
