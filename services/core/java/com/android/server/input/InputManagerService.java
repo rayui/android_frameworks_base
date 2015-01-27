@@ -96,6 +96,7 @@ import java.util.HashSet;
 
 import libcore.io.Streams;
 import libcore.util.Objects;
+import android.os.SystemProperties;
 
 /*
  * Wraps the C++ InputManager and provides its callbacks.
@@ -195,6 +196,7 @@ public class InputManagerService extends IInputManager.Stub
     private static native void nativeReloadDeviceAliases(long ptr);
     private static native String nativeDump(long ptr);
     private static native void nativeMonitor(long ptr);
+    private static native void nativeSetTvOutStatus(long ptr, boolean on);
 
     // Input event injection constants defined in InputDispatcher.h.
     private static final int INPUT_EVENT_INJECTION_SUCCEEDED = 0;
@@ -327,6 +329,27 @@ public class InputManagerService extends IInputManager.Stub
             @Override
             public void onReceive(Context context, Intent intent) {
                 reloadDeviceAliases();
+            }
+        }, filter, null, mHandler);
+
+        //Add for support osd cursor in hdmiswitchm mode
+        filter = new IntentFilter(WindowManagerPolicy.ACTION_HDMI_PLUGGED);
+        mContext.registerReceiver(new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                boolean mTVOutOn = intent.getBooleanExtra(WindowManagerPolicy.EXTRA_HDMI_PLUGGED_STATE, false);
+                Slog.i(TAG, "TvOut Intent receiver, tvout status="+ mTVOutOn);
+                if (SystemProperties.getBoolean("ro.vout.dualdisplay", false)
+                    || SystemProperties.getBoolean("ro.vout.dualdisplay2", false)
+                    || SystemProperties.getBoolean("ro.vout.dualdisplay3", false)
+                    ||SystemProperties.getBoolean("ro.vout.dualdisplay4", false)) {
+                    if (Settings.System.getInt(mContext.getContentResolver(),
+                        Settings.System.HDMI_DUAL_DISP, 1) != 1) {
+                        nativeSetTvOutStatus(mPtr, mTVOutOn);
+                    }
+                } else {
+                    nativeSetTvOutStatus(mPtr, mTVOutOn);
+                }
             }
         }, filter, null, mHandler);
 
