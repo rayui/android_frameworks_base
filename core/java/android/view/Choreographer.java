@@ -99,6 +99,8 @@ public final class Choreographer {
         }
     };
 
+    private boolean mHWVSYNC = false;
+
     // Enable/disable vsync for animations and drawing.
     private static final boolean USE_VSYNC = SystemProperties.getBoolean(
             "debug.choreographer.vsync", true);
@@ -172,6 +174,10 @@ public final class Choreographer {
         mCallbackQueues = new CallbackQueue[CALLBACK_LAST + 1];
         for (int i = 0; i <= CALLBACK_LAST; i++) {
             mCallbackQueues[i] = new CallbackQueue();
+        }
+
+        if ("true".equals(SystemProperties.get("sys.hardware.vsync", ""))) {
+            mHWVSYNC = true;
         }
     }
 
@@ -478,7 +484,7 @@ public final class Choreographer {
     private void scheduleFrameLocked(long now) {
         if (!mFrameScheduled) {
             mFrameScheduled = true;
-            if (USE_VSYNC) {
+            if (USE_VSYNC && !mHWVSYNC) {
                 if (DEBUG) {
                     Log.d(TAG, "Scheduling next frame on vsync.");
                 }
