@@ -1314,8 +1314,6 @@ public final class Settings {
          * HDMI settings.
          */
         public static final String HDMI_DUAL_DISP = "hdmi_dual_disp";
-        public static final String HDMI_SPDIF     = "hdmi_spdif";
-        public static final String HDMI_AUTO_SWITCH = "hdmi_auto_switch";
 
         /**
          * Look up a name in the database.
