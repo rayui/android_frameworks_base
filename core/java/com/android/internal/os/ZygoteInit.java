@@ -249,11 +249,43 @@ public class ZygoteInit {
         }
     }
 
+    public static class PreloadClassThread extends Thread {
+        public void run() {
+            preloadClasses();
+        }
+    }
+
+    public static class PreloadResThread extends Thread {
+        public void run() {
+            preloadResources();
+        }
+    }
+
+    static void concurrentPreload() {
+        Thread preloadclass = new PreloadClassThread();
+        Thread preloadres = new PreloadResThread();
+        preloadclass.start();
+        preloadres.start();
+        try {
+            preloadclass.join();
+            preloadres.join();
+        } catch ( InterruptedException ex ) {
+            Log.e ( TAG, "concurrentPreload join() InterruptedException error ", ex );
+        }
+        preloadOpenGL();
+    }
+
     static void preload() {
         Log.d(TAG, "begin preload");
-        preloadClasses();
-        preloadResources();
-        preloadOpenGL();
+        if ( !SystemProperties.getBoolean ( "config.enable_quickboot", false ) ) {
+            if ( SystemProperties.getBoolean ( "config.concurrent_preload", true ) ) {
+                concurrentPreload();
+            } else {
+                preloadClasses();
+                preloadResources();
+                preloadOpenGL();
+            }
+        }
         preloadSharedLibraries();
         // Ask the WebViewFactory to do any initialization that must run in the zygote process,
         // for memory sharing purposes.
