@@ -234,7 +234,6 @@ public class ConnectivityService extends IConnectivityManager.Stub
      * abstractly.
      */
     private NetworkStateTracker mNetTrackers[];
-    private int[] mPriorityList = null;
     private Context mContext;
     private int mNetworkPreference;
     // 0 is full bad, 100 is full good
@@ -725,10 +724,10 @@ public class ConnectivityService extends IConnectivityManager.Stub
                 if (DBG) loge("Ignoring protectedNetwork " + p);
             }
         }
-        
+
         // high priority first
         /*
-        mPriorityList = new int[mNetworksDefined];
+        int[] priorityList = new int[mNetworksDefined];
         int insertionPoint = mNetworksDefined-1;
         int currentLowest = 0;
         int nextLowest = 0;
@@ -742,15 +741,13 @@ public class ConnectivityService extends IConnectivityManager.Stub
                     }
                     continue;
                 }
-                mPriorityList[insertionPoint--] = na.type;
+                priorityList[insertionPoint--] = na.type;
             }
             currentLowest = nextLowest;
             nextLowest = 0;
         }*/
 
-        /*
         int addCount = 0;
-        mPriorityList = new int[mNetworksDefined];
         NetworkConfig[] netConfig = new NetworkConfig[mNetworksDefined];
         for (NetworkConfig na : mNetConfigs) {
             if (na == null) continue;
@@ -760,6 +757,7 @@ public class ConnectivityService extends IConnectivityManager.Stub
             }
             netConfig[addCount++] = na;
         }
+        int[] priorityList = new int[addCount];
         for (int i = 0; i < addCount; i++) {
             for (int j = i + 1; j < addCount; j++) {
                 if(netConfig[i].priority < netConfig[j].priority) {
@@ -769,10 +767,10 @@ public class ConnectivityService extends IConnectivityManager.Stub
                 }
             }
 
-            mPriorityList[i] = netConfig[i].type;
+            priorityList[i] = netConfig[i].type;
         }
 
-        for (int targetNetworkType : mPriorityList) {
+        for (int targetNetworkType : priorityList) {
             final NetworkConfig config = mNetConfigs[targetNetworkType];
             final NetworkStateTracker tracker;
             final NetworkStateTracker pppoetracker;
@@ -809,7 +807,7 @@ public class ConnectivityService extends IConnectivityManager.Stub
             if (config.isDefault()) {
                 tracker.reconnect();
             }
-        }*/
+        }
 
         mTestMode = SystemProperties.get("cm.test.mode").equals("true")
                 && SystemProperties.get("ro.build.type").equals("eng");
