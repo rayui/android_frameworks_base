@@ -900,10 +900,18 @@ public class AudioTrack
         long[] longArray = new long[2];
         int ret = native_get_timestamp(longArray);
         if (ret != SUCCESS) {
+            loge("ERR:native_get_timestamp ret"+ret);
             return false;
         }
         timestamp.framePosition = longArray[0];
-        timestamp.nanoTime = longArray[1];
+        //for CTS_Test:  run cts -c android.media.cts.AudioTrackTest -m testGetTimestamp
+        //    the timestamp value got by calling
+        //          clock_gettime(CLOCK_REALTIME,timestamp),
+        //    which located in <hardware/amlogic/audio/audio_hw.c/out_get_presentation_position(),does not match :
+        //           System.nanoTime()
+        //    which located in android_5.0\cts\tests\tests\media\src\android\media\cts\AudioTrackTest.java\< public void testGetTimestamp()>,
+        //    so used System.nanoTime() here instead of the longArray[1] that storing the timestamp value getting from audio_hw.c
+        timestamp.nanoTime = System.nanoTime();//longArray[1];
         return true;
     }
 

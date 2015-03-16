@@ -866,6 +866,8 @@ static jint android_media_AudioTrack_get_timestamp(JNIEnv *env,  jobject thiz, j
         nTimestamp[0] = (jlong) timestamp.mPosition;
         nTimestamp[1] = (jlong) ((timestamp.mTime.tv_sec * 1000000000LL) + timestamp.mTime.tv_nsec);
         env->ReleasePrimitiveArrayCritical(jTimestamp, nTimestamp, 0);
+    }else{
+        ALOGE("[%s %d]ERR:lpTrack->getTimestamp return status/%d\n",__FUNCTION__,__LINE__,status);
     }
     return (jint) nativeToJavaStatus(status);
 }
