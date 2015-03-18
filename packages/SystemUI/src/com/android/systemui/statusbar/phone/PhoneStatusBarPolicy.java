@@ -29,6 +29,8 @@ import android.os.UserHandle;
 import android.provider.Settings.Global;
 import android.telecom.TelecomManager;
 import android.util.Log;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 
 import com.android.internal.telephony.IccCardConstants;
 import com.android.internal.telephony.TelephonyIntents;
@@ -52,6 +54,7 @@ public class PhoneStatusBarPolicy {
     private static final String SLOT_CAST = "cast";
     private static final String SLOT_HOTSPOT = "hotspot";
     private static final String SLOT_BLUETOOTH = "bluetooth";
+    private static final String SLOT_ETH ="eth";
     private static final String SLOT_TTY = "tty";
     private static final String SLOT_ZEN = "zen";
     private static final String SLOT_VOLUME = "volume";
@@ -60,6 +63,7 @@ public class PhoneStatusBarPolicy {
 
     private final Context mContext;
     private final StatusBarManager mService;
+    private final ConnectivityManager mConnectivityManager;
     private final Handler mHandler = new Handler();
     private final CastController mCast;
     private final HotspotController mHotspot;
@@ -103,6 +107,9 @@ public class PhoneStatusBarPolicy {
             else if (action.equals(Intent.ACTION_USER_SWITCHED)) {
                 updateAlarm();
             }
+            else if (action.equals(ConnectivityManager.CONNECTIVITY_ACTION)) {
+                updateEth();
+            }
         }
     };
 
@@ -111,6 +118,8 @@ public class PhoneStatusBarPolicy {
         mCast = cast;
         mHotspot = hotspot;
         mService = (StatusBarManager)context.getSystemService(Context.STATUS_BAR_SERVICE);
+        mConnectivityManager = (ConnectivityManager)context.getSystemService(
+                Context.CONNECTIVITY_SERVICE);
 
         // listen for broadcasts
         IntentFilter filter = new IntentFilter();
@@ -123,6 +132,7 @@ public class PhoneStatusBarPolicy {
         filter.addAction(TelephonyIntents.ACTION_SIM_STATE_CHANGED);
         filter.addAction(TelecomManager.ACTION_CURRENT_TTY_MODE_CHANGED);
         filter.addAction(Intent.ACTION_USER_SWITCHED);
+        filter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
         mContext.registerReceiver(mIntentReceiver, filter, null, mHandler);
 
         // TTY status
@@ -273,6 +283,35 @@ public class PhoneStatusBarPolicy {
         mService.setIcon(SLOT_BLUETOOTH, iconId, 0, contentDescription);
         mService.setIconVisibility(SLOT_BLUETOOTH, mBluetoothEnabled);
     }
+
+    private final void updateEth() {
+        boolean mEthEnabled = false;
+
+        NetworkInfo networkInfo = mConnectivityManager.getActiveNetworkInfo();
+        int iconId = R.drawable.stat_sys_eth_connected;
+        String contentDescription =
+        mContext.getString(R.string.accessibility_ethernet_disconnected);
+        if ( networkInfo != null ) {
+            if (networkInfo.getType() == ConnectivityManager.TYPE_ETHERNET) {
+                iconId = R.drawable.stat_sys_eth_connected;
+                contentDescription =
+                    mContext.getString(R.string.accessibility_ethernet_connected);
+                mEthEnabled = true;
+            } else if (networkInfo.getType() == ConnectivityManager.TYPE_PPPOE) {
+                iconId = R.drawable.stat_sys_pppoe_connected;
+                contentDescription =
+                    mContext.getString(R.string.accessibility_pppoe_connected);
+                mEthEnabled = true;
+            } else
+                mEthEnabled = false;
+        } else {
+            mEthEnabled = false;
+        }
+        mService.setIcon(SLOT_ETH, iconId, 0, contentDescription);
+        mService.setIconVisibility(SLOT_ETH, mEthEnabled);
+    }
+
+
 
     private final void updateTTY(Intent intent) {
         int currentTtyMode = intent.getIntExtra(TelecomManager.EXTRA_CURRENT_TTY_MODE,

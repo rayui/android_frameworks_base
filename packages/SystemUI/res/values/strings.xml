@@ -230,6 +230,16 @@
     <!-- Content description of the bluetooth icon when connecting for accessibility (not shown on the screen). [CHAR LIMIT=NONE] -->
     <string name="accessibility_bluetooth_disconnected">Bluetooth disconnected.</string>
 
+    <!-- Content description of the ethernet icon when connected for accessibility (not shown on the screen). [CHAR LIMIT=NONE] -->
+    <string name="accessibility_ethernet_connected">Ethernet connected.</string>
+    <!-- Content description of the ethetnet icon when connecting for accessibility (not shown on the screen). [CHAR LIMIT=NONE] -->
+    <string name="accessibility_ethernet_disconnected">Ethernet disconnected.</string>
+
+    <!-- Content description of the pppoe icon when connected for accessibility (not shown on the screen). [CHAR LIMIT=NONE] -->
+    <string name="accessibility_pppoe_connected">Pppoe connected.</string>
+    <!-- Content description of the pppoe icon when connecting for accessibility (not shown on the screen). [CHAR LIMIT=NONE] -->
+    <string name="accessibility_pppoe_disconnected">Pppoe disconnected.</string>
+
     <!-- Content description of the battery when no battery for accessibility (not shown on the screen). [CHAR LIMIT=NONE] -->
     <string name="accessibility_no_battery">No battery.</string>
     <!-- Content description of the battery when it is one bar for accessibility (not shown on the screen). [CHAR LIMIT=NONE] -->
