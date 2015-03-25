@@ -86,7 +86,7 @@ private:
     bool android();
     bool readFile(const char* name, String8& outString);
     bool movie();
-
+    bool video();
     void checkExit();
 
     sp<SurfaceComposerClient>       mSession;

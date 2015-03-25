@@ -50,6 +50,9 @@
 #include <GLES/glext.h>
 #include <EGL/eglext.h>
 
+#include <binder/IServiceManager.h>
+#include <systemcontrol/ISystemControlService.h>
+
 #include "BootAnimation.h"
 #include "AudioPlayer.h"
 
@@ -58,9 +61,15 @@
 #define SYSTEM_ENCRYPTED_BOOTANIMATION_FILE "/system/media/bootanimation-encrypted.zip"
 #define EXIT_PROP_NAME "service.bootanim.exit"
 
+#define BOOT_VIDEO_START "service.bootvideo"
+#define DISPLAY_FB0_BLANK "/sys/class/graphics/fb0/blank"
+#define VIDEO_DISABLE "/sys/class/video/disable_video"
+
 extern "C" int clock_nanosleep(clockid_t clock_id, int flags,
                            const struct timespec *request,
                            struct timespec *remain);
+
+bool gUseBootVideo = false;
 
 namespace android {
 
@@ -377,9 +386,16 @@ status_t BootAnimation::readyToRun() {
 bool BootAnimation::threadLoop()
 {
     bool r;
+    char value[PROPERTY_VALUE_MAX];
+    memset(value,0,sizeof(value));
+    property_get("service.bootvideo", value, "0");
+    gUseBootVideo = (atoi(value) == 1 ? true : false);
     // We have no bootanimation file, so we use the stock android logo
     // animation.
-    if (mZip == NULL) {
+    if (gUseBootVideo) {
+        r = video();
+    }
+    else if (mZip == NULL) {
         r = android();
     } else {
         r = movie();
@@ -472,6 +488,34 @@ bool BootAnimation::android()
     glDeleteTextures(1, &mAndroid[0].name);
     glDeleteTextures(1, &mAndroid[1].name);
     return false;
+}
+
+bool BootAnimation::video() {
+    sp<IServiceManager> sm = defaultServiceManager();
+    if (sm == NULL) {
+        return false;
+    }
+    sp<android::ISystemControlService> psysWrite = interface_cast<ISystemControlService>(sm->getService(String16("system_control")));
+    if (psysWrite == NULL) {
+        return false;
+    }
+    psysWrite->setProperty(String16("ctl.start"), String16("bootvideo"));
+    String16 value;
+    String16 def("NULL");
+    do {
+        checkExit();
+        usleep(10*1000);
+    } while (!exitPending());
+
+    psysWrite->setProperty(String16("service.bootvideo.exit"), String16("1"));
+    do {
+        psysWrite->getPropertyString(String16("init.svc.bootvideo"), def, value);
+    }while((String8(value).operator==(String8("running"))) == true);
+
+    psysWrite->writeSysfs(String16(DISPLAY_FB0_BLANK), String16("0"));
+    psysWrite->writeSysfs(String16(VIDEO_DISABLE), String16("2"));
+
+    return true;
 }
 
 
