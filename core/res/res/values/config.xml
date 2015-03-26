@@ -270,6 +270,9 @@
     <string-array translatable="false" name="config_tether_dhcp_range">
     </string-array>
 
+    <string-array translatable="false" name="config_usbethernet_iface_regexs">
+        <item>"usbnet0"</item>
+    </string-array>
     <!-- Regex of wired ethernet ifaces -->
     <string translatable="false" name="config_ethernet_iface_regex">eth\\d</string>
 
