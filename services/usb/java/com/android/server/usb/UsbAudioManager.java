@@ -148,7 +148,11 @@ public class UsbAudioManager {
 
         // The protocol for now will be to select the last-connected (highest-numbered)
         // Alsa Card.
-        int card = cardsParser.getNumCardRecords() - 1;
+        // AML use the protocal to select the saved card but not the last-connected one; because
+        // the last one may be other kind of card
+
+        int card = cardsParser.getCardIndex(cardsParser.getNumCardRecords() - 1);
+        //int card = cardsParser.getNumCardRecords() - 1;
         int device = 0;
 
         boolean hasPlayback = devicesParser.hasPlaybackDevices(card);
