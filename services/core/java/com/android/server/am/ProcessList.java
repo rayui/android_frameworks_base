@@ -290,10 +290,19 @@ final class ProcessList {
         if (write) {
             int[] cfgOomMinFree = null;
             int[] cfgOomAdj = null;
+            String lowmemCfg = "";
+            // adjust lowmemorykiller config according to ddr size
+            if (mTotalMemMb > 1024) {
+                lowmemCfg = "/system/etc/lowmemorykiller_2G.txt";
+            } else if (mTotalMemMb > 512) {
+                lowmemCfg = "/system/etc/lowmemorykiller.txt";
+            } else {
+                lowmemCfg = "/system/etc/lowmemorykiller_512M.txt";
+            }
 
             try{
                 java.io.BufferedReader br = new java.io.BufferedReader(new java.io.InputStreamReader(
-                    new java.io.FileInputStream("/system/etc/lowmemorykiller.txt")));
+                    new java.io.FileInputStream(lowmemCfg)));
                 String line = "";
                 while ((line = br.readLine()) != null) {
                     if (line.startsWith("#")) {//skip this line
