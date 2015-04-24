@@ -8,7 +8,8 @@ LOCAL_SRC_FILES:= \
 
 LOCAL_CFLAGS += -DGL_GLEXT_PROTOTYPES -DEGL_EGLEXT_PROTOTYPES
 
-LOCAL_C_INCLUDES += external/tinyalsa/include
+LOCAL_C_INCLUDES += external/tinyalsa/include \
+                    $(TOP)/vendor/amlogic/frameworks/services
 
 LOCAL_SHARED_LIBRARIES := \
 	libcutils \
@@ -21,7 +22,8 @@ LOCAL_SHARED_LIBRARIES := \
     libEGL \
     libGLESv1_CM \
     libgui \
-    libtinyalsa
+    libtinyalsa \
+    libsystemcontrolservice
 
 LOCAL_MODULE:= bootanimation
 
