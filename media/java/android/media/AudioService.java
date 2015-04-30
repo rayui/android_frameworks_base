@@ -676,7 +676,7 @@ public class AudioService extends IAudioService.Stub {
     public void onSystemReady() {
         mSystemReady = true;
         sendMsg(mAudioHandler, MSG_LOAD_SOUND_EFFECTS, SENDMSG_QUEUE,
-                0, 0, null, 0);
+                0, 0, null, 500);
 
         mKeyguardManager =
                 (KeyguardManager) mContext.getSystemService(Context.KEYGUARD_SERVICE);
