@@ -340,8 +340,10 @@ final class ProcessList {
                 if ((null != cfgOomMinFree) && (null != cfgOomAdj)) {
                     buf.putInt(cfgOomMinFree[i]);
                     buf.putInt(cfgOomAdj[i]);
-                }
-                else {
+                    //update mOomMinFree and mOomAdj array
+                    mOomMinFree[i] = cfgOomMinFree[i] * 4; // turn to kB
+                    mOomAdj[i] = cfgOomAdj[i];
+                } else {
                     buf.putInt((mOomMinFree[i]*1024)/PAGE_SIZE);
                     buf.putInt(mOomAdj[i]);
                 }
