@@ -31,6 +31,10 @@ import java.io.File;
 import java.io.FileDescriptor;
 import java.io.PrintWriter;
 import java.util.HashMap;
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 
 /**
  * UsbAudioManager manages USB audio devices.
@@ -93,6 +97,44 @@ public class UsbAudioManager {
         mContext.sendStickyBroadcastAsUser(intent, UserHandle.ALL);
     }
 
+    private boolean waitForAlsaUSBCards() {
+        final int kNumRetries = 10;
+        final int kSleepTime = 500; // ms
+        String cardsFilePath = "/proc/asound/cards";
+        File cardsFile = new File(cardsFilePath);
+        boolean exists = false;
+
+        for (int retry = 0; !exists && retry < kNumRetries; retry++) {
+            try {
+                FileReader reader = new FileReader(cardsFile);
+                BufferedReader bufferedReader = new BufferedReader(reader);
+                String line = "";
+                while ((line = bufferedReader.readLine()) != null) {
+                    // AML only record the USB audio card
+                    Slog.d(TAG, "waitForAlsaUSBCards line:" + line);
+                    if (line.indexOf("USB-Audio") >= 0) {
+                        reader.close();
+                        exists = true;
+                        Slog.d(TAG, "waitForAlsaUSBCards USB audio device is exist");
+                        return exists;
+                    }
+                }
+                reader.close();
+                Slog.w(TAG, "waitForAlsaUSBCards : retry: " + retry);
+                Thread.sleep(kSleepTime);
+            }catch (FileNotFoundException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (IllegalThreadStateException ex) {
+                Slog.d(TAG, "usb: IllegalThreadStateException while waiting for ALSA USB file.");
+            } catch (java.lang.InterruptedException ex) {
+                Slog.d(TAG, "usb: InterruptedException while waiting for ALSA USB file.");
+            }
+        }
+        return exists;
+    }
+
     private boolean waitForAlsaFile(int card, int device, boolean capture) {
         // These values were empirically determined.
         final int kNumRetries = 5;
@@ -138,6 +180,10 @@ public class UsbAudioManager {
         // clear why this works, or that it can be relied on going forward.  Needs further
         // research.
         AlsaCardsParser cardsParser = new AlsaCardsParser();
+        if (!waitForAlsaUSBCards()) {
+            Slog.w(TAG, "Timeout: wait more than 5s for USB audio device ready." );
+            return;
+        }
         cardsParser.scan();
         // cardsParser.Log();
 
