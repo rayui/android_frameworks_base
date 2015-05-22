@@ -57,6 +57,7 @@ import android.view.animation.Interpolator;
 import android.view.animation.LinearInterpolator;
 import android.view.animation.Transformation;
 import android.widget.RemoteViews.RemoteView;
+import android.os.SystemProperties;
 
 import java.util.ArrayList;
 
@@ -237,6 +238,7 @@ public class ProgressBar extends View {
 
     private AccessibilityEventSender mAccessibilityEventSender;
 
+    private boolean mHWVSYNC = false;
     /**
      * Create a new progress bar with range 0...100 and initial progress of 0.
      * @param context the application environment
@@ -270,8 +272,9 @@ public class ProgressBar extends View {
             // XML attribute for mMaxHeight is read after calling this method
             setProgressDrawableTiled(progressDrawable);
         }
-
-
+        if ("true".equals(SystemProperties.get("sys.hardware.vsync", ""))) {
+            mHWVSYNC = true;
+        }
         mDuration = a.getInt(R.styleable.ProgressBar_indeterminateDuration, mDuration);
 
         mMinWidth = a.getDimensionPixelSize(R.styleable.ProgressBar_minWidth, mMinWidth);
@@ -1497,6 +1500,7 @@ public class ProgressBar extends View {
             ((Animatable) mIndeterminateDrawable).stop();
             mShouldStartAnimationDrawable = false;
         }
+        mHWVSYNC = false;
         postInvalidate();
     }
 
@@ -1662,6 +1666,18 @@ public class ProgressBar extends View {
                     d.setLevel((int) (scale * MAX_LEVEL));
                 } finally {
                     mInDrawing = false;
+                }
+                try {                           // slow down, have a rest
+                    if (mHWVSYNC) {
+                        Thread.sleep(300);
+                    } else {
+                        int interval = SystemProperties.getInt("rw.progressbar.interval",-1);
+                        if (interval > 0) {
+                            Thread.sleep(interval);
+                        }
+                    }
+                } catch (InterruptedException e) {
+
                 }
                 postInvalidateOnAnimation();
             }
