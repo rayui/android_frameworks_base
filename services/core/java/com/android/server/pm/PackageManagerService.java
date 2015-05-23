@@ -219,6 +219,8 @@ import dalvik.system.VMRuntime;
 import libcore.io.IoUtils;
 import libcore.util.EmptyArray;
 
+import android.content.res.XmlResourceParser;
+
 /**
  * Keep track of all those .apks everywhere.
  * 
@@ -5507,7 +5509,18 @@ public class PackageManagerService extends IPackageManager.Stub {
             }
 
             if (mFoundPolicyFile) {
-                SELinuxMMAC.assignSeinfoValue(pkg);
+                final int id = com.android.internal.R.xml.third_party_app_sepolicy;
+                XmlResourceParser parser = mContext.getResources().getXml(id);
+                boolean succeeded = false;
+                try {
+                    succeeded = SELinuxMMAC.assignSeinfoValueFromXml(pkg, parser);
+                } catch (Exception e) {
+                    Slog.i(TAG, "Assign seinfo value from xml exception: " + e);
+                } finally {
+                    parser.close();
+                }
+                if (!succeeded)
+                    SELinuxMMAC.assignSeinfoValue(pkg);
             }
 
             pkg.applicationInfo.uid = pkgSetting.appId;
