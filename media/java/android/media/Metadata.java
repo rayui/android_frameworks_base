@@ -424,6 +424,15 @@ import java.util.TimeZone;
         return mKeyToPosMap.containsKey(metadataId);
     }
 
+    // mParcel must be recycled, otherwise will cause binder buffer leak.
+    // It's the caller's responsibility to do this.
+    /**
+     * {@hide}
+     */
+    public void recycleParcel() {
+        mParcel.recycle();
+    }
+
     // Accessors.
     // Caller must make sure the key is present using the {@code has}
     // method otherwise a RuntimeException will occur.
