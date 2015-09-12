@@ -20767,6 +20767,11 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
         }
     }
 
+    /** @hide */
+    public int getPointerShape(MotionEvent event, float x, float y) {
+        return PointerIcon.STYLE_NOT_SPECIFIED;
+    }
+
     //
     // Properties
     //

@@ -206,6 +206,7 @@ public class InputManagerService extends IInputManager.Stub
     private static native void nativeReloadDeviceAliases(long ptr);
     private static native String nativeDump(long ptr);
     private static native void nativeMonitor(long ptr);
+    private static native void nativeSetPointerIconShape(long ptr, int iconId);
 
     // Input event injection constants defined in InputDispatcher.h.
     private static final int INPUT_EVENT_INJECTION_SUCCEEDED = 0;
@@ -1415,6 +1416,12 @@ public class InputManagerService extends IInputManager.Stub
             }
         }
     }
+
+  // Binder call
+  @Override
+  public void setPointerIconShape(int iconId) {
+      nativeSetPointerIconShape(mPtr, iconId);
+  }
 
     @Override
     public void dump(FileDescriptor fd, PrintWriter pw, String[] args) {
