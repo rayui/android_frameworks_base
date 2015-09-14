@@ -816,7 +816,7 @@ int AndroidRuntime::startVm(JavaVM** pJavaVM, JNIEnv** pEnv, bool zygote)
         parseExtraOpts(dex2oatFlagsBuf, "-Xcompiler-option");
 
         property_get("config.disable_instaboot", propBuf, "true");
-        if (strncmp(propBuf, "false", 5) == 0) {
+        if (strncmp(propBuf, "false", 5) == 0 && !access("/system/bin/instabootserver", F_OK)) {
             addOption("-Xnorelocate");
         }
     }

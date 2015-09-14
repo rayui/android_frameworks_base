@@ -26,6 +26,11 @@ LOCAL_PREBUILT_STATIC_JAVA_LIBRARIES := services.instaboot:lib/instaboot_static.
 
 include $(BUILD_MULTI_PREBUILT)
 
+
+
+instaboot_bin := $(strip $(wildcard $(LOCAL_PATH)/lib/instabootserver))
+
+ifneq ($(instaboot_bin),)
 include $(CLEAR_VARS)
 LOCAL_MODULE := instabootserver
 LOCAL_SRC_FILES := lib/instabootserver
@@ -33,5 +38,6 @@ LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE_CLASS := ETC
 LOCAL_MODULE_PATH := $(TARGET_OUT)/bin
 include $(BUILD_PREBUILT)
+endif
 
 include $(call all-makefiles-under,$(LOCAL_PATH))
