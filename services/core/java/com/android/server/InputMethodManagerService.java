@@ -1737,6 +1737,10 @@ public class InputMethodManagerService extends IInputMethodManager.Stub
 
     }
 
+    public void reloadSettings() {
+        updateFromSettingsLocked(true);
+    }
+
     public void updateKeyboardFromSettingsLocked() {
         mShowImeWithHardKeyboard = mSettings.isShowImeWithHardKeyboardEnabled();
         if (mSwitchingDialog != null

@@ -811,6 +811,10 @@ int AndroidRuntime::startVm(JavaVM** pJavaVM, JNIEnv** pEnv)
         property_get("dalvik.vm.dex2oat-flags", dex2oatFlagsBuf, "");
         parseExtraOpts(dex2oatFlagsBuf, "-Xcompiler-option");
 
+        property_get("config.disable_instaboot", propBuf, "true");
+        if (strncmp(propBuf, "false", 5) == 0) {
+            addOption("-Xnorelocate");
+        }
     }
 
     /* extra options; parse this late so it overrides others */

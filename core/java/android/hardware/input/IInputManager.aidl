@@ -19,6 +19,7 @@ package android.hardware.input;
 import android.hardware.input.InputDeviceIdentifier;
 import android.hardware.input.KeyboardLayout;
 import android.hardware.input.IInputDevicesChangedListener;
+import android.hardware.input.ITvKeyEventListener;
 import android.hardware.input.TouchCalibration;
 import android.os.IBinder;
 import android.view.InputDevice;
@@ -56,6 +57,8 @@ interface IInputManager {
             String keyboardLayoutDescriptor);
     void removeKeyboardLayoutForInputDevice(in InputDeviceIdentifier identifier,
             String keyboardLayoutDescriptor);
+
+    void registerTvKeyEventListener(ITvKeyEventListener listener);
 
     // Registers an input devices changed listener.
     void registerInputDevicesChangedListener(IInputDevicesChangedListener listener);

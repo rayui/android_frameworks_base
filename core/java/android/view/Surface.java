@@ -118,6 +118,11 @@ public class Surface implements Parcelable {
     public static final int ROTATION_270 = 3;
 
     /**
+     * @hide
+     */
+    public Boolean osd_video_flag = false;
+
+    /**
      * Create an empty surface, which will later be filled in by readFromParcel().
      * @hide
      */
@@ -142,6 +147,7 @@ public class Surface implements Parcelable {
 
         synchronized (mLock) {
             mName = surfaceTexture.toString();
+            osd_video_flag = true;
             setNativeObjectLocked(nativeCreateFromSurfaceTexture(surfaceTexture));
         }
     }

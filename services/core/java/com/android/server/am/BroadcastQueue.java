@@ -328,8 +328,8 @@ public final class BroadcastQueue {
         if (mBroadcastsScheduled) {
             return;
         }
-        mHandler.sendMessage(mHandler.obtainMessage(BROADCAST_INTENT_MSG, this));
         mBroadcastsScheduled = true;
+        mHandler.sendMessage(mHandler.obtainMessage(BROADCAST_INTENT_MSG, this));
     }
 
     public BroadcastRecord getMatchingOrderedReceiver(IBinder receiver) {

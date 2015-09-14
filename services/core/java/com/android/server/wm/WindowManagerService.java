@@ -831,6 +831,7 @@ public class WindowManagerService extends IWindowManager.Stub
         mDisplayManagerInternal = LocalServices.getService(DisplayManagerInternal.class);
         mDisplaySettings = new DisplaySettings();
         mDisplaySettings.readSettingsLocked();
+        mRotation = getDefaultRotation();
 
         LocalServices.addService(WindowManagerPolicy.class, mPolicy);
 
@@ -938,6 +939,22 @@ public class WindowManagerService extends IWindowManager.Stub
                 Slog.wtf(TAG, "Window Manager Crash", e);
             }
             throw e;
+        }
+    }
+
+    private int getDefaultRotation() {
+        int value = SystemProperties.getInt("ro.display.rotation", 0);
+        switch(value) {
+            case 0:
+                return Surface.ROTATION_0;
+            case 90:
+                return Surface.ROTATION_90;
+            case 180:
+                return Surface.ROTATION_180;
+            case 270:
+                return Surface.ROTATION_270;
+            default:
+                return Surface.ROTATION_0;
         }
     }
 

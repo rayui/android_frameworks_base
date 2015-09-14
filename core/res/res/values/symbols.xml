@@ -280,6 +280,7 @@
   <java-symbol type="bool" name="config_enableScreenshotChord" />
   <java-symbol type="bool" name="config_bluetooth_default_profiles" />
   <java-symbol type="bool" name="config_enableWifiDisplay" />
+  <java-symbol type="bool" name="config_enableWifiP2pAutoAcceptInvitation" />
   <java-symbol type="bool" name="config_useDevInputEventForAudioJack" />
   <java-symbol type="bool" name="config_safe_media_volume_enabled" />
   <java-symbol type="bool" name="config_camera_sound_forced" />
@@ -540,9 +541,11 @@
   <java-symbol type="string" name="chooseActivity" />
   <java-symbol type="string" name="config_default_dns_server" />
   <java-symbol type="string" name="config_ethernet_iface_regex" />
+  <java-symbol type="array"  name="config_usbethernet_iface_regexs" />
   <java-symbol type="string" name="config_mms_user_agent" />
   <java-symbol type="string" name="config_mms_user_agent_profile_url" />
   <java-symbol type="string" name="config_ntpServer" />
+  <java-symbol type="array"  name="config_ntpServer_list" />
   <java-symbol type="string" name="config_useragentprofile_url" />
   <java-symbol type="string" name="config_wifi_p2p_device_type" />
   <java-symbol type="string" name="contentServiceSync" />
@@ -1513,6 +1516,8 @@
   <java-symbol type="string" name="system_ui_date_pattern" />
   <java-symbol type="string" name="android_start_title" />
   <java-symbol type="string" name="android_upgrading_title" />
+  <java-symbol type="string" name="android_optimizing_title" />
+  <java-symbol type="string" name="android_optimizing_content" />
   <java-symbol type="string" name="bugreport_title" />
   <java-symbol type="string" name="bugreport_message" />
   <java-symbol type="string" name="bugreport_status" />
@@ -2157,4 +2162,6 @@
   <java-symbol type="bool" name="config_use_sim_language_file" />
   <java-symbol type="bool" name="config_LTE_eri_for_network_name" />
   <java-symbol type="bool" name="config_defaultInTouchMode" />
+
+  <java-symbol type="xml" name="third_party_app_sepolicy" />
 </resources>

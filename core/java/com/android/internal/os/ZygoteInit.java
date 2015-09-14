@@ -251,11 +251,43 @@ public class ZygoteInit {
         }
     }
 
+    public static class PreloadClassThread extends Thread {
+        public void run() {
+            preloadClasses();
+        }
+    }
+
+    public static class PreloadResThread extends Thread {
+        public void run() {
+            preloadResources();
+        }
+    }
+
+    static void concurrentPreload() {
+        Thread preloadclass = new PreloadClassThread();
+        Thread preloadres = new PreloadResThread();
+        preloadclass.start();
+        preloadres.start();
+        try {
+            preloadclass.join();
+            preloadres.join();
+        } catch ( InterruptedException ex ) {
+            Log.e ( TAG, "concurrentPreload join() InterruptedException error ", ex );
+        }
+        preloadOpenGL();
+    }
+
     static void preload() {
         Log.d(TAG, "begin preload");
-        preloadClasses();
-        preloadResources();
-        preloadOpenGL();
+        if ( !SystemProperties.getBoolean ( "config.enable_quickboot", false ) ) {
+            if ( SystemProperties.getBoolean ( "config.concurrent_preload", true ) ) {
+                concurrentPreload();
+            } else {
+                preloadClasses();
+                preloadResources();
+                preloadOpenGL();
+            }
+        }
         preloadSharedLibraries();
         // Ask the WebViewFactory to do any initialization that must run in the zygote process,
         // for memory sharing purposes.
@@ -621,8 +653,28 @@ public class ZygoteInit {
 
         /* For child process */
         if (pid == 0) {
-            if (hasSecondZygote(abiList)) {
-                waitForSecondaryZygote(socketName);
+            /**
+            *  If system isn't first boot and persist.sys.zygote_secondary=stop in
+            *  zygote64_32 or zygote32_64 system, so that primary zygote don't
+            *  check and wait for secondary zygote.
+            *   --- start zygote_secondary service by following conditions:
+            *   1.first boot; 2.persist.sys.zygote_secondary=start; 3.data partition
+            *   has been erased before.
+            */
+            String zygote = SystemProperties.get("ro.zygote", "zygote32");
+            boolean support_secondary = zygote.equals("zygote64_32") || zygote.equals("zygote32_64");
+            boolean enable = SystemProperties.get("ro.dynamic.zygote_secondary", "disable").equals("enable");
+            if (enable && support_secondary) {
+                if (SystemProperties.get("ro.firstboot", "0").equals("1") ||
+                    SystemProperties.get("persist.sys.zygote_secondary", "start").equals("start")) {
+                    if (hasSecondZygote(abiList)) {
+                        waitForSecondaryZygote(socketName);
+                    }
+                }
+            } else {
+                if (hasSecondZygote(abiList)) {
+                    waitForSecondaryZygote(socketName);
+                }
             }
 
             handleSystemServerProcess(parsedArgs);

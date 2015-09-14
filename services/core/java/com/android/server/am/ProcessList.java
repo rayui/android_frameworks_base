@@ -177,7 +177,7 @@ final class ProcessList {
     // 1280x800 or larger screen with around 1GB RAM.  Values are in KB.
     private final int[] mOomMinFreeHigh = new int[] {
             73728, 92160, 110592,
-            129024, 147456, 184320
+            129024, 225000, 325000
     };
     // The actual OOM killer memory levels we are using.
     private final int[] mOomMinFree = new int[mOomAdj.length];
@@ -288,11 +288,65 @@ final class ProcessList {
         }
 
         if (write) {
+            int[] cfgOomMinFree = null;
+            int[] cfgOomAdj = null;
+            String lowmemCfg = "";
+            // adjust lowmemorykiller config according to ddr size
+            if (mTotalMemMb > 1024) {
+                lowmemCfg = "/system/etc/lowmemorykiller_2G.txt";
+            } else if (mTotalMemMb > 512) {
+                lowmemCfg = "/system/etc/lowmemorykiller.txt";
+            } else {
+                lowmemCfg = "/system/etc/lowmemorykiller_512M.txt";
+            }
+
+            try{
+                java.io.BufferedReader br = new java.io.BufferedReader(new java.io.InputStreamReader(
+                    new java.io.FileInputStream(lowmemCfg)));
+                String line = "";
+                while ((line = br.readLine()) != null) {
+                    if (line.startsWith("#")) {//skip this line
+                        continue;
+                    }
+                    else if (line.startsWith("adj:")) {
+                        String str = line.substring("adj:".length());
+                        if (str.split(",").length == mOomAdj.length) {
+                            cfgOomAdj = new int[mOomAdj.length];
+                            for (int i = 0; i < mOomAdj.length; i++)
+                                cfgOomAdj[i] = Integer.parseInt(str.split(",")[i]);
+
+                            Slog.i("XXXXXXX", "adjConfigString: " + str);
+                        }
+                    }
+                    else if (line.startsWith("minfree:")) {
+                        String str = line.substring("minfree:".length());
+                        if (str.split(",").length == mOomAdj.length) {
+                            cfgOomMinFree = new int[mOomAdj.length];
+                            for (int i = 0; i < mOomAdj.length; i++)
+                                cfgOomMinFree[i] = Integer.parseInt(str.split(",")[i]);
+
+                            Slog.i("XXXXXXX", "minfreeConfigString: " + str);
+                        }
+                    }
+                }
+                br.close();
+            } catch (java.io.FileNotFoundException ex) {
+            } catch (java.io.IOException ex) {
+            }
+
             ByteBuffer buf = ByteBuffer.allocate(4 * (2*mOomAdj.length + 1));
             buf.putInt(LMK_TARGET);
             for (int i=0; i<mOomAdj.length; i++) {
-                buf.putInt((mOomMinFree[i]*1024)/PAGE_SIZE);
-                buf.putInt(mOomAdj[i]);
+                if ((null != cfgOomMinFree) && (null != cfgOomAdj)) {
+                    buf.putInt(cfgOomMinFree[i]);
+                    buf.putInt(cfgOomAdj[i]);
+                    //update mOomMinFree and mOomAdj array
+                    mOomMinFree[i] = cfgOomMinFree[i] * 4; // turn to kB
+                    mOomAdj[i] = cfgOomAdj[i];
+                } else {
+                    buf.putInt((mOomMinFree[i]*1024)/PAGE_SIZE);
+                    buf.putInt(mOomAdj[i]);
+                }
             }
 
             writeLmkd(buf);

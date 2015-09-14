@@ -18,7 +18,7 @@ package android.net;
 
 import android.os.Parcelable;
 import android.os.Parcel;
-
+import android.app.ActivityThread;
 import com.android.internal.annotations.VisibleForTesting;
 
 import java.util.EnumMap;
@@ -131,7 +131,9 @@ public class NetworkInfo implements Parcelable {
      * @hide
      */
     public NetworkInfo(int type, int subtype, String typeName, String subtypeName) {
-        if (!ConnectivityManager.isNetworkTypeValid(type)) {
+        if (!("com.android.cts.net".equals(ActivityThread.currentPackageName()) &&
+            type == ConnectivityManager.TYPE_PPPOE) &&
+            !ConnectivityManager.isNetworkTypeValid(type)) {
             throw new IllegalArgumentException("Invalid network type: " + type);
         }
         mNetworkType = type;

@@ -604,6 +604,7 @@ public class MediaPlayer implements SubtitleController.Listener
     private final IAppOpsService mAppOps;
     private int mStreamType = AudioManager.USE_DEFAULT_STREAM_TYPE;
     private int mUsage = -1;
+    private boolean needosdvideo = false;  //flag from surface
 
     /**
      * Default constructor. Consider using one of the create() methods for
@@ -712,6 +713,8 @@ public class MediaPlayer implements SubtitleController.Listener
         } else {
             surface = null;
         }
+        if (surface != null && surface.osd_video_flag)
+            needosdvideo = surface.osd_video_flag;
         _setVideoSurface(surface);
         updateSurfaceScreenOn();
     }
@@ -739,6 +742,8 @@ public class MediaPlayer implements SubtitleController.Listener
             Log.w(TAG, "setScreenOnWhilePlaying(true) is ineffective for Surface");
         }
         mSurfaceHolder = null;
+        if (surface != null && surface.osd_video_flag)
+            needosdvideo = surface.osd_video_flag;
         _setVideoSurface(surface);
         updateSurfaceScreenOn();
     }
@@ -1159,6 +1164,8 @@ public class MediaPlayer implements SubtitleController.Listener
      * @throws IllegalStateException if it is called in an invalid state
      */
     public void start() throws IllegalStateException {
+        if (needosdvideo)
+            setParameter(KEY_PARAMETER_AML_PLAYER_ENABLE_OSDVIDEO,"osdvideo:1");
         if (isRestricted()) {
             _setVolume(0, 0);
         }
@@ -1538,6 +1545,52 @@ public class MediaPlayer implements SubtitleController.Listener
 
     // Keep KEY_PARAMETER_* in sync with include/media/mediaplayer.h
     private final static int KEY_PARAMETER_AUDIO_ATTRIBUTES = 1400;
+
+    /** @hide */
+    public static final int KEY_PARAMETER_AML_VIDEO_POSITION_INFO = 2000;
+    /** @hide */
+    public static final int KEY_PARAMETER_AML_PLAYER_TYPE_STR  = 2001;
+    /** @hide */
+    public static final int KEY_PARAMETER_AML_PLAYER_VIDEO_OUT_TYPE = 2002;
+    /** @hide */
+    public static final int KEY_PARAMETER_AML_PLAYER_SWITCH_SOUND_TRACK = 2003;         //refer to lmono,rmono,stereo,set only
+    /** @hide */
+    public static final int KEY_PARAMETER_AML_PLAYER_SWITCH_AUDIO_TRACK = 2004;         //refer to audio track index,set only
+    /** @hide */
+    public static final int KEY_PARAMETER_AML_PLAYER_TRICKPLAY_FORWARD = 2005;          //refer to forward:speed
+    /** @hide */
+    public static final int KEY_PARAMETER_AML_PLAYER_TRICKPLAY_BACKWARD = 2006;         //refer to backward:speed
+    /** @hide */
+    public static final int KEY_PARAMETER_AML_PLAYER_FORCE_HARD_DECODE = 2007;          //refer to mp3,etc.
+    /** @hide */
+    public static final int KEY_PARAMETER_AML_PLAYER_FORCE_SOFT_DECODE = 2008;          //refer to mp3,etc.
+    /** @hide */
+    public static final int KEY_PARAMETER_AML_PLAYER_GET_MEDIA_INFO = 2009;             //get media info
+    /** @hide */
+    public static final int KEY_PARAMETER_AML_PLAYER_FORCE_SCREEN_MODE = 2010;          //set screen mode
+    /** @hide */
+    public static final int KEY_PARAMETER_AML_PLAYER_SET_DISPLAY_MODE = 2011;           //set display mode
+    /** @hide */
+    public static final int KEY_PARAMETER_AML_PLAYER_GET_DTS_ASSET_TOTAL = 2012;        //get dts asset total number
+    /** @hide */
+    public static final int KEY_PARAMETER_AML_PLAYER_SET_DTS_ASSET = 2013;              //set dts asset
+    /** @hide */
+    public static final int KEY_PARAMETER_AML_PLAYER_HWBUFFER_STATE = 3001;             //refer to stream buffer info, hardware decoder buffer infos,get only
+    /** @hide */
+    public static final int KEY_PARAMETER_AML_PLAYER_RESET_BUFFER = 8000;               //top level seek..player need to reset & clearbuffers
+    /** @hide */
+    public static final int KEY_PARAMETER_AML_PLAYER_FREERUN_MODE = 8002;               //play ASAP...
+    /** @hide */
+    public static final int KEY_PARAMETER_AML_PLAYER_ENABLE_OSDVIDEO = 8003;            //play enable osd video for this player....
+    /** @hide */
+    public static final int KEY_PARAMETER_AML_PLAYER_DIS_AUTO_BUFFER = 8004;            //play ASAP...
+    /** @hide */
+    public static final int KEY_PARAMETER_AML_PLAYER_ENA_AUTO_BUFFER = 8005;            //play ASAP...
+    /** @hide */
+    public static final int KEY_PARAMETER_AML_PLAYER_USE_SOFT_DEMUX = 8006;             //play use soft demux
+    /** @hide */
+    public static final int KEY_PARAMETER_AML_PLAYER_PR_CUSTOM_DATA = 9001;             //string, playready, set only
+
     /**
      * Sets the parameter indicated by key.
      * @param key key indicates the parameter to be set.
@@ -1546,6 +1599,196 @@ public class MediaPlayer implements SubtitleController.Listener
      * {@hide}
      */
     private native boolean setParameter(int key, Parcel value);
+
+    /**
+     * Sets the parameter indicated by key.
+     * @param key key indicates the parameter to be set.
+     * @param value value of the parameter to be set.
+     * @return true if the parameter is set successfully, false otherwise
+     * {@hide}
+     */
+    public boolean setParameter(int key, String value) {
+        Parcel p = Parcel.obtain();
+        p.writeString(value);
+        boolean ret = setParameter(key, p);
+        p.recycle();
+        return ret;
+    }
+
+    /**
+     * Sets the parameter indicated by key.
+     * @param key key indicates the parameter to be set.
+     * @param value value of the parameter to be set.
+     * @return true if the parameter is set successfully, false otherwise
+     * {@hide}
+     */
+    public boolean setParameter(int key, int value) {
+        Parcel p = Parcel.obtain();
+        p.writeInt(value);
+        boolean ret = setParameter(key, p);
+        p.recycle();
+        return ret;
+    }
+
+    /*
+     * Gets the value of the parameter indicated by key.
+     * @param key key indicates the parameter to get.
+     * @param reply value of the parameter to get.
+     */
+    private native void getParameter(int key, Parcel reply);
+
+    /**
+    * @hide
+    */
+    public class VideoInfo{
+        public int index;
+        public int id;
+        public String vformat;
+        public int width;
+        public int height;
+    }
+
+    /**
+    * @hide
+    */
+    public class AudioInfo{
+        public int index;
+        public int id; //id is useless for application
+        public int aformat;
+        public int channel;
+        public int sample_rate;
+    }
+
+    /**
+    * @hide
+    */
+    public class SubtitleInfo{
+        public int index;
+        public int id;
+        public int sub_type;
+        public String sub_language;
+    }
+
+    /**
+    * @hide
+    */
+    public class MediaInfo{
+        public String filename;
+        public int duration;
+        public String file_size;
+        public int bitrate;
+        public int type;
+        //public int fps;
+        public int cur_video_index;
+        public int cur_audio_index;
+        public int cur_sub_index;
+
+        public int total_video_num;
+        public VideoInfo[] videoInfo;
+
+        public int total_audio_num;
+        public AudioInfo[] audioInfo;
+
+        public int total_sub_num;
+        public SubtitleInfo[] subtitleInfo;
+    }
+
+    /**
+    * @hide
+    */
+    public MediaInfo getMediaInfo() {
+        MediaInfo mediaInfo = new MediaInfo();
+        Parcel p = Parcel.obtain();
+        getParameter(KEY_PARAMETER_AML_PLAYER_GET_MEDIA_INFO, p);
+        mediaInfo.filename = p.readString();
+        mediaInfo.duration = p.readInt();
+        mediaInfo.file_size = p.readString();
+        mediaInfo.bitrate = p.readInt();
+        mediaInfo.type = p.readInt();
+        //mediaInfo.fps = p.readInt();
+        mediaInfo.cur_video_index = p.readInt();
+        mediaInfo.cur_audio_index = p.readInt();
+        mediaInfo.cur_sub_index = p.readInt();
+
+        //----video info----
+        mediaInfo.total_video_num = p.readInt();
+        mediaInfo.videoInfo = new VideoInfo[mediaInfo.total_video_num];
+        for (int i=0;i<mediaInfo.total_video_num;i++) {
+            mediaInfo.videoInfo[i] = new VideoInfo();
+            mediaInfo.videoInfo[i].index = p.readInt();
+            mediaInfo.videoInfo[i].id = p.readInt();
+            mediaInfo.videoInfo[i].vformat = p.readString();
+            mediaInfo.videoInfo[i].width = p.readInt();
+            mediaInfo.videoInfo[i].height = p.readInt();
+        }
+
+        //----audio info----
+        mediaInfo.total_audio_num = p.readInt();
+        mediaInfo.audioInfo = new AudioInfo[mediaInfo.total_audio_num];
+        for (int j=0;j<mediaInfo.total_audio_num;j++) {
+            mediaInfo.audioInfo[j] = new AudioInfo();
+            mediaInfo.audioInfo[j].index = p.readInt();
+            mediaInfo.audioInfo[j].id = p.readInt();
+            mediaInfo.audioInfo[j].aformat = p.readInt();
+            mediaInfo.audioInfo[j].channel = p.readInt();
+            mediaInfo.audioInfo[j].sample_rate = p.readInt();
+        }
+
+        //----subtitle info----
+        mediaInfo.total_sub_num = p.readInt();
+        mediaInfo.subtitleInfo = new SubtitleInfo[mediaInfo.total_sub_num];
+        for (int k=0;k<mediaInfo.total_sub_num;k++) {
+            mediaInfo.subtitleInfo[k] = new SubtitleInfo();
+            mediaInfo.subtitleInfo[k].index = p.readInt();
+            mediaInfo.subtitleInfo[k].id = p.readInt();
+            mediaInfo.subtitleInfo[k].sub_type = p.readInt();
+            mediaInfo.subtitleInfo[k].sub_language = p.readString();
+        }
+        p.recycle();
+
+        return mediaInfo;
+    }
+
+    /**
+     * Gets the value of the parameter indicated by key.
+     * The caller is responsible for recycling the returned parcel.
+     * @param key key indicates the parameter to get.
+     * @return value of the parameter.
+     * {@hide}
+     */
+    public Parcel getParcelParameter(int key) {
+        Parcel p = Parcel.obtain();
+        getParameter(key, p);
+        return p;
+    }
+
+    /**
+     * Gets the value of the parameter indicated by key.
+     * @param key key indicates the parameter to get.
+     * @return value of the parameter.
+     * {@hide}
+     */
+    public String getStringParameter(int key) {
+        Parcel p = Parcel.obtain();
+        getParameter(key, p);
+        String ret = p.readString();
+        p.recycle();
+        return ret;
+    }
+
+    /**
+     * Gets the value of the parameter indicated by key.
+     * @param key key indicates the parameter to get.
+     * @return value of the parameter.
+     * {@hide}
+     */
+    public int getIntParameter(int key) {
+        Parcel p = Parcel.obtain();
+        getParameter(key, p);
+        int ret = p.readInt();
+        p.recycle();
+        return ret;
+    }
 
     /**
      * Sets the audio attributes for this MediaPlayer.

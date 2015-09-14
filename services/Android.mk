@@ -28,7 +28,8 @@ services := \
     restrictions \
     usage \
     usb \
-    voiceinteraction
+    voiceinteraction \
+    instaboot
 
 # The convention is to name each service module 'services.$(module_name)'
 LOCAL_STATIC_JAVA_LIBRARIES := $(addprefix services.,$(services))

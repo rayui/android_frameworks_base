@@ -37,6 +37,7 @@
        <item><xliff:g id="id">mute</xliff:g></item>
        <item><xliff:g id="id">volume</xliff:g></item>
        <item><xliff:g id="id">wifi</xliff:g></item>
+       <item><xliff:g id="id">eth</xliff:g></item>
        <item><xliff:g id="id">cdma_eri</xliff:g></item>
        <item><xliff:g id="id">data_connection</xliff:g></item>
        <item><xliff:g id="id">phone_evdo_signal</xliff:g></item>
@@ -269,6 +270,9 @@
     <string-array translatable="false" name="config_tether_dhcp_range">
     </string-array>
 
+    <string-array translatable="false" name="config_usbethernet_iface_regexs">
+        <item>"usbnet0"</item>
+    </string-array>
     <!-- Regex of wired ethernet ifaces -->
     <string translatable="false" name="config_ethernet_iface_regex">eth\\d</string>
 
@@ -1345,6 +1349,10 @@
 
     <!-- Remote server that can provide NTP responses. -->
     <string translatable="false" name="config_ntpServer">2.android.pool.ntp.org</string>
+    <!-- Remote server that can provide NTP responses. -->
+    <string-array translatable="false" name="config_ntpServer_list">
+        <item>2.android.pool.ntp.org</item>
+    </string-array>
     <!-- Normal polling frequency in milliseconds -->
     <integer name="config_ntpPollingInterval">864000000</integer>
     <!-- Try-again polling interval in milliseconds, in case the network request failed -->
@@ -1595,6 +1603,7 @@
          * The device must be provisioned with HDCP keys (for protected content).
     -->
     <bool name="config_enableWifiDisplay">false</bool>
+    <bool name="config_enableWifiP2pAutoAcceptInvitation">false</bool>
 
     <!-- When true use the linux /dev/input/event subsystem to detect the switch changes
          on the headphone/microphone jack. When false use the older uevent framework. -->

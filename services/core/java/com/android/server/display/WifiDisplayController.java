@@ -24,6 +24,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.database.ContentObserver;
+import android.hardware.display.DisplayManager;
 import android.hardware.display.WifiDisplay;
 import android.hardware.display.WifiDisplaySessionInfo;
 import android.hardware.display.WifiDisplayStatus;
@@ -42,10 +43,12 @@ import android.net.wifi.p2p.WifiP2pManager.Channel;
 import android.net.wifi.p2p.WifiP2pManager.GroupInfoListener;
 import android.net.wifi.p2p.WifiP2pManager.PeerListListener;
 import android.os.Handler;
+import android.os.SystemProperties;
 import android.provider.Settings;
 import android.util.Slog;
 import android.view.Surface;
-
+import android.view.WindowManager;
+import android.view.Display;
 import java.io.PrintWriter;
 import java.net.Inet4Address;
 import java.net.InetAddress;
@@ -56,6 +59,13 @@ import java.util.Enumeration;
 
 import libcore.util.Objects;
 
+import android.os.UserHandle;
+
+import android.os.PowerManager;
+import android.os.AsyncTask;
+import android.os.RemoteException;
+import android.view.IWindowManager;
+import android.view.WindowManagerGlobal;
 /**
  * Manages all of the various asynchronous interactions with the {@link WifiP2pManager}
  * on behalf of {@link WifiDisplayAdapter}.
@@ -74,8 +84,8 @@ final class WifiDisplayController implements DumpUtils.Dump {
 
     private static final int DEFAULT_CONTROL_PORT = 7236;
     private static final int MAX_THROUGHPUT = 50;
-    private static final int CONNECTION_TIMEOUT_SECONDS = 30;
-    private static final int RTSP_TIMEOUT_SECONDS = 30;
+    private static final int CONNECTION_TIMEOUT_SECONDS = 120;
+    private static final int RTSP_TIMEOUT_SECONDS = 120;
     private static final int RTSP_TIMEOUT_SECONDS_CERT_MODE = 120;
 
     // We repeatedly issue calls to discover peers every so often for a few reasons.
@@ -88,20 +98,23 @@ final class WifiDisplayController implements DumpUtils.Dump {
     //    we ask to discover again, particularly for the isSessionAvailable() property.
     private static final int DISCOVER_PEERS_INTERVAL_MILLIS = 10000;
 
-    private static final int CONNECT_MAX_RETRIES = 3;
+    private static final int CONNECT_MAX_RETRIES = 12;
     private static final int CONNECT_RETRY_DELAY_MILLIS = 500;
 
     private final Context mContext;
     private final Handler mHandler;
     private final Listener mListener;
 
+    private final WindowManager mWindowManager;
     private final WifiP2pManager mWifiP2pManager;
     private final Channel mWifiP2pChannel;
-
+    private PowerManager.WakeLock mWakeLock;
+    private boolean isLockedByMiracast;
     private boolean mWifiP2pEnabled;
     private boolean mWfdEnabled;
     private boolean mWfdEnabling;
     private NetworkInfo mNetworkInfo;
+    final Object mLock = new Object();
 
     private final ArrayList<WifiP2pDevice> mAvailableWifiDisplayPeers =
             new ArrayList<WifiP2pDevice>();
@@ -154,6 +167,10 @@ final class WifiDisplayController implements DumpUtils.Dump {
     private int mAdvertisedDisplayHeight;
     private int mAdvertisedDisplayFlags;
 
+    private int mRotation = -1;
+    private int lastRotation = -1;
+    private int hwrot = 0;
+    private Display display;
     // Certification
     private boolean mWifiDisplayCertMode;
     private int mWifiDisplayWpsConfig = WpsInfo.INVALID;
@@ -164,14 +181,20 @@ final class WifiDisplayController implements DumpUtils.Dump {
         mContext = context;
         mHandler = handler;
         mListener = listener;
+        isLockedByMiracast = false;
 
         mWifiP2pManager = (WifiP2pManager)context.getSystemService(Context.WIFI_P2P_SERVICE);
         mWifiP2pChannel = mWifiP2pManager.initialize(context, handler.getLooper(), null);
 
+        hwrot = SystemProperties.getInt("ro.sf.hwrotation", 0);
+        mWindowManager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+        display = mWindowManager.getDefaultDisplay();
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION);
         intentFilter.addAction(WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION);
         intentFilter.addAction(WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION);
+        intentFilter.addAction(DisplayManager.ACTION_WIFI_DISPLAY_STATUS_CHANGED);
+        intentFilter.addAction(Intent.ACTION_CONFIGURATION_CHANGED);
         intentFilter.addAction(WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION);
         context.registerReceiver(mWifiP2pReceiver, intentFilter, null, mHandler);
 
@@ -553,6 +576,38 @@ final class WifiDisplayController implements DumpUtils.Dump {
         updateConnection();
     }
 
+    private void requsetWakelockAndLockRotate() {
+    clearWakelockAndUnlockRotate();//clear first
+
+        synchronized(mLock) {
+            PowerManager pm = (PowerManager) mContext.getSystemService(Context.POWER_SERVICE);
+            mWakeLock = pm.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK | PowerManager.ON_AFTER_RELEASE, TAG);
+            if (mWakeLock != null) {
+                mWakeLock.acquire();
+                Slog.d(TAG,"isRotationLocked?"+isRotationLocked(mContext));
+                if (!isRotationLocked(mContext)) {
+                    isLockedByMiracast = true;
+                    setRotationLockForAccessibility(mContext,true);
+                }
+            }
+            Slog.i(TAG, "requsetWakelockAndLockRotate mWakeLock:" + mWakeLock + " isLockedByMiracast:" + isLockedByMiracast);
+        }
+    }
+
+    private void clearWakelockAndUnlockRotate() {
+        synchronized(mLock) {
+            Slog.i(TAG, "clearWakelockAndUnlockRotate mWakeLock:" + mWakeLock + " isLockedByMiracast:" + isLockedByMiracast);
+            if (mWakeLock != null) {
+                mWakeLock.release();
+                mWakeLock = null;
+                if (isLockedByMiracast) {
+                    setRotationLockForAccessibility(mContext,false);
+                    isLockedByMiracast = false;
+                }
+            }
+        }
+    }
+
     /**
      * This function is called repeatedly after each asynchronous operation
      * until all preconditions for the connection have been satisfied and the
@@ -591,6 +646,9 @@ final class WifiDisplayController implements DumpUtils.Dump {
             mConnectedDevice = null;
             mConnectedDeviceGroupInfo = null;
 
+            Slog.d(TAG,"Disconnecting wifidisplay mWakeLock != null"+(mWakeLock != null)+" isLockedByMiracast?"+isLockedByMiracast);
+            clearWakelockAndUnlockRotate();
+
             unadvertiseDisplay();
 
             final WifiP2pDevice oldDevice = mDisconnectingDevice;
@@ -628,6 +686,9 @@ final class WifiDisplayController implements DumpUtils.Dump {
             mCancelingDevice = mConnectingDevice;
             mConnectingDevice = null;
 
+            Slog.d(TAG,"Canceling connection to wifidisplay mWakeLock != null"+(mWakeLock != null)+" isLockedByMiracast?"+isLockedByMiracast);
+            clearWakelockAndUnlockRotate();
+
             unadvertiseDisplay();
             mHandler.removeCallbacks(mConnectionTimeout);
 
@@ -648,6 +709,7 @@ final class WifiDisplayController implements DumpUtils.Dump {
 
                 private void next() {
                     if (mCancelingDevice == oldDevice) {
+                        clearWakelockAndUnlockRotate();
                         mCancelingDevice = null;
                         updateConnection();
                     }
@@ -659,6 +721,7 @@ final class WifiDisplayController implements DumpUtils.Dump {
         // Step 4. If we wanted to disconnect, or we're updating after starting an
         // autonomous GO, then mission accomplished.
         if (mDesiredDevice == null) {
+            clearWakelockAndUnlockRotate();
             if (mWifiDisplayCertMode) {
                 mListener.onDisplaySessionInfo(getSessionInfo(mConnectedDeviceGroupInfo, 0));
             }
@@ -699,7 +762,7 @@ final class WifiDisplayController implements DumpUtils.Dump {
                     // for WIFI_P2P_CONNECTION_CHANGED_ACTION.  However, we might never
                     // get that broadcast, so we register a timeout.
                     Slog.i(TAG, "Initiated connection to Wifi display: " + newDevice.deviceName);
-
+                    requsetWakelockAndLockRotate();
                     mHandler.postDelayed(mConnectionTimeout, CONNECTION_TIMEOUT_SECONDS * 1000);
                 }
 
@@ -783,6 +846,32 @@ final class WifiDisplayController implements DumpUtils.Dump {
 
             mHandler.postDelayed(mRtspTimeout, rtspTimeout * 1000);
         }
+    }
+
+    /**
+    *Returns true if rotation lock is enabled.
+    **/
+    public static boolean isRotationLocked(Context context) {
+        return Settings.System.getIntForUser(context.getContentResolver(),
+                Settings.System.ACCELEROMETER_ROTATION, 0, UserHandle.USER_CURRENT) == 0;
+    }
+
+    public static void setRotationLockForAccessibility(Context context, final boolean enabled) {
+        AsyncTask.execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    IWindowManager wm = WindowManagerGlobal.getWindowManagerService();
+                    if (enabled) {
+                        wm.freezeRotation(-1);
+                    } else {
+                        wm.thawRotation();
+                    }
+                } catch (RemoteException exc) {
+                    Slog.w(TAG, "Unable to save auto-rotate setting");
+                }
+             }
+         });
     }
 
     private WifiDisplaySessionInfo getSessionInfo(WifiP2pGroup info, int session) {
@@ -961,7 +1050,7 @@ final class WifiDisplayController implements DumpUtils.Dump {
             mHandler.post(new Runnable() {
                 @Override
                 public void run() {
-                    if (oldSurface != null && surface != oldSurface) {
+                    if (oldDisplay != null && mAdvertisedDisplay == null) {
                         mListener.onDisplayDisconnected();
                     } else if (oldDisplay != null && !oldDisplay.hasSameAddress(display)) {
                         mListener.onDisplayConnectionFailed();
@@ -975,7 +1064,7 @@ final class WifiDisplayController implements DumpUtils.Dump {
                             // name must have changed.
                             mListener.onDisplayChanged(display);
                         }
-                        if (surface != null && surface != oldSurface) {
+                        if (width > 0 && height > 0) {
                             mListener.onDisplayConnected(display, surface, width, height, flags);
                         }
                     }
@@ -1088,9 +1177,42 @@ final class WifiDisplayController implements DumpUtils.Dump {
                     Slog.d(TAG, "Received WIFI_P2P_THIS_DEVICE_CHANGED_ACTION: mThisDevice= "
                             + mThisDevice);
                 }
+            }else if(action.equals(DisplayManager.ACTION_WIFI_DISPLAY_STATUS_CHANGED)) {
+                WifiDisplayStatus mWifiDisplayStatus = (WifiDisplayStatus)intent.getParcelableExtra(
+                        DisplayManager.EXTRA_WIFI_DISPLAY_STATUS);
+                if (mWifiDisplayStatus.getActiveDisplayState() == WifiDisplayStatus.DISPLAY_STATE_CONNECTED) {
+                   mRotation = lastRotation = display.getRotation();
+                   if ((mRemoteDisplay != null) && (mRotation >= 0)) {
+                        mRemoteDisplay.setRotation(computeWifiDisplayRotation(display.getWidth(),display.getHeight(),mRotation));
+                   }
+                }else {
+                    mRotation = lastRotation = -1;
+                }
+            }else if (action.equals(Intent.ACTION_CONFIGURATION_CHANGED)) {
+                if (mConnectedDevice != null
+                    && mRemoteDisplay != null && mRemoteDisplayConnected) {
+                   mRotation = display.getRotation();
+                   if (mRotation >= 0 && mRotation != lastRotation) {
+                       lastRotation = mRotation;
+                       mRemoteDisplay.setRotation(computeWifiDisplayRotation(display.getWidth(),display.getHeight(),mRotation));
+                    }
+                }
             }
         }
     };
+    public int computeWifiDisplayRotation(int width, int height, int rot) {
+        if (width >= height) {
+            if (rot == 1 || rot == 3) {
+                rot = rot +1;
+            }
+        } else {
+            if (rot == 2 || rot == 0) {
+                rot = rot +1;
+            }
+        }
+        return (rot+ (hwrot/90))%4;
+    }
+
 
     /**
      * Called on the handler thread when displays are connected or disconnected.

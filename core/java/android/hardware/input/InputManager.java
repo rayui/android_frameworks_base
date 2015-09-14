@@ -684,6 +684,18 @@ public final class InputManager {
         }
     }
 
+    /**
+     * for tv
+     * @hide
+     */
+    public void injectTvKeyEventListener(final ITvKeyEventListener listener){
+        try {
+            mIm.registerTvKeyEventListener(listener);
+        } catch (RemoteException ex) {
+            throw new RuntimeException("Could not register tv keyevent listener", ex);
+        }
+    }
+
     private void populateInputDevicesLocked() {
         if (mInputDevicesChangedListener == null) {
             final InputDevicesChangedListener listener = new InputDevicesChangedListener();

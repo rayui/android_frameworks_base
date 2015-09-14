@@ -198,6 +198,9 @@ class BluetoothManagerService extends IBluetoothManager.Stub {
                 mHandler.sendMessage(mHandler.obtainMessage(MESSAGE_USER_SWITCHED,
                        intent.getIntExtra(Intent.EXTRA_USER_HANDLE, 0), 0));
             } else if (Intent.ACTION_BOOT_COMPLETED.equals(action)) {
+                if (isBluetoothPersistedStateOn()) {
+                    mEnableExternal = true;
+                }
                 synchronized(mReceiver) {
                     if (mEnableExternal && isBluetoothPersistedStateOnBluetooth()) {
                         //Enable

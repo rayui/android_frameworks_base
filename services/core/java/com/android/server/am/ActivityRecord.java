@@ -906,6 +906,7 @@ final class ActivityRecord {
             StringBuilder sb = service.mStringBuilder;
             sb.setLength(0);
             sb.append("Displayed ");
+            service.updateLauncherDisplayStatus();
             sb.append(shortComponentName);
             sb.append(": ");
             TimeUtils.formatDuration(thisTime, sb);

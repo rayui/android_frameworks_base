@@ -1102,6 +1102,11 @@ public final class Settings {
         public String getStringForUser(ContentResolver cr, String name, final int userHandle) {
             final boolean isSelf = (userHandle == UserHandle.myUserId());
             if (isSelf) {
+                if (name.equals("SETTINGS_stop")) {
+                    mValues.clear();
+                    Log.v(TAG, "SETTING_stop clear cache");
+                    return null;
+                }
                 long newValuesVersion = SystemProperties.getLong(mVersionSystemProperty, 0);
 
                 // Our own user's settings data uses a client-side cache
@@ -1308,6 +1313,12 @@ public final class Settings {
         public static void getNonLegacyMovedKeys(HashSet<String> outKeySet) {
             outKeySet.addAll(MOVED_TO_GLOBAL);
         }
+
+        /**
+         * @hide
+         * HDMI settings.
+         */
+        public static final String HDMI_DUAL_DISP = "hdmi_dual_disp";
 
         /**
          * Look up a name in the database.

@@ -22,6 +22,8 @@ import android.content.pm.Signature;
 import android.os.Environment;
 import android.util.Slog;
 import android.util.Xml;
+import android.text.TextUtils;
+import android.content.res.XmlResourceParser;
 
 import com.android.internal.util.XmlUtils;
 
@@ -334,6 +336,53 @@ public final class SELinuxMMAC {
             }
         }
         return true;
+    }
+
+    public static boolean assignSeinfoValueFromXml(PackageParser.Package pkg, XmlResourceParser parser) {
+        try {
+            int type;
+            while ((type = parser.next()) != XmlPullParser.START_TAG
+                    && type != XmlPullParser.END_DOCUMENT) {
+            }
+            if (type != XmlPullParser.START_TAG) {
+                throw new IllegalStateException("no start tag found");
+            }
+
+            while (type != XmlPullParser.END_DOCUMENT) {
+                switch (type) {
+                    case XmlPullParser.START_TAG: {
+                        String name = parser.getName();
+                        if (name.equals("application")) {
+                            String packageName = parser.getAttributeValue(null, "packagename");
+                            if (pkg.packageName.equals(packageName)) {
+                                String seinfo = parser.getAttributeValue(null, "sepolicy");
+                                if (!TextUtils.isEmpty(seinfo)) {
+                                    pkg.applicationInfo.seinfo = seinfo;
+                                    if (DEBUG_POLICY_INSTALL)
+                                        Slog.i(TAG, "package (" + pkg.packageName +
+                                               ") labeled with seinfo=" + seinfo);
+                                    return true;
+                                }
+                            }
+                        }
+                        break;
+                    }
+                }
+                type = parser.next();
+            }
+        } catch (IllegalStateException e) {
+            Slog.w(TAG, "Failed parsing " + e);
+        } catch (NullPointerException e) {
+            Slog.w(TAG, "Failed parsing " + e);
+        } catch (XmlPullParserException e) {
+            Slog.w(TAG, "Failed parsing " + e);
+        } catch (IOException e) {
+            Slog.w(TAG, "Failed parsing " + e);
+        } catch (Exception e) {
+            Slog.w(TAG, "Failed parsing " + e);
+        }
+
+        return false;
     }
 
     /**

@@ -382,7 +382,7 @@ public final class HdmiControlService extends SystemService {
         mCecController = HdmiCecController.create(this);
         if (mCecController != null) {
             // TODO: Remove this as soon as OEM's HAL implementation is corrected.
-            mCecController.setOption(OPTION_CEC_ENABLE, ENABLED);
+            //mCecController.setOption(OPTION_CEC_ENABLE, ENABLED);
 
             // TODO: load value for mHdmiControlEnabled from preference.
             if (mHdmiControlEnabled) {

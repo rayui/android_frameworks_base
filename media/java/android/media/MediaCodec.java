@@ -549,6 +549,10 @@ final public class MediaCodec {
 
         String[] keys = null;
         Object[] values = null;
+        if (surface != null && format != null) {
+            if (surface.osd_video_flag)
+                format.setInteger("4k-osd",1);
+        }
 
         if (format != null) {
             keys = new String[formatMap.size()];

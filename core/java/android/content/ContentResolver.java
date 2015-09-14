@@ -1568,8 +1568,17 @@ public abstract class ContentResolver {
             ContentObserver observer, int userHandle)
     {
         try {
-            getContentService().registerContentObserver(uri, notifyForDescendents,
-                    observer.getContentObserver(), userHandle);
+            for (int i = 0; i < 10; i++) {
+                IContentService contentService = getContentService();
+                if (contentService == null) {
+                    //wait for ContentService to be ready
+                    SystemClock.sleep(100);
+                    continue;
+                }
+                contentService.registerContentObserver(uri, notifyForDescendents,
+                        observer.getContentObserver(), userHandle);
+                break;
+            }
         } catch (RemoteException e) {
         }
     }

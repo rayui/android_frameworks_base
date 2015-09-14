@@ -57,6 +57,7 @@ import android.view.animation.Interpolator;
 import android.view.animation.LinearInterpolator;
 import android.view.animation.Transformation;
 import android.widget.RemoteViews.RemoteView;
+import android.os.SystemProperties;
 
 import java.util.ArrayList;
 
@@ -237,6 +238,9 @@ public class ProgressBar extends View {
 
     private AccessibilityEventSender mAccessibilityEventSender;
 
+    private boolean mHWVSYNC = false;
+    private int mDrawCount = 0;
+
     /**
      * Create a new progress bar with range 0...100 and initial progress of 0.
      * @param context the application environment
@@ -270,7 +274,6 @@ public class ProgressBar extends View {
             // XML attribute for mMaxHeight is read after calling this method
             setProgressDrawableTiled(progressDrawable);
         }
-
 
         mDuration = a.getInt(R.styleable.ProgressBar_indeterminateDuration, mDuration);
 
@@ -1485,6 +1488,12 @@ public class ProgressBar extends View {
             mAnimation.setInterpolator(mInterpolator);
             mAnimation.setStartTime(Animation.START_ON_FIRST_FRAME);
         }
+
+        if ("hardware".equals(SystemProperties.get("sys.vsync.type"))) {
+            mHWVSYNC = true;
+            mDrawCount = 0;
+        }
+
         postInvalidate();
     }
 
@@ -1497,6 +1506,7 @@ public class ProgressBar extends View {
             ((Animatable) mIndeterminateDrawable).stop();
             mShouldStartAnimationDrawable = false;
         }
+        mHWVSYNC = false;
         postInvalidate();
     }
 
@@ -1666,7 +1676,8 @@ public class ProgressBar extends View {
                 postInvalidateOnAnimation();
             }
 
-            d.draw(canvas);
+            if (!mHWVSYNC || (mDrawCount++%20 != 0))
+                d.draw(canvas);
             canvas.restoreToCount(saveCount);
 
             if (mShouldStartAnimationDrawable && d instanceof Animatable) {

@@ -456,4 +456,8 @@ interface IPackageManager {
     KeySet getSigningKeySet(String packageName);
     boolean isPackageSignedByKeySet(String packageName, in KeySet ks);
     boolean isPackageSignedByKeySetExactly(String packageName, in KeySet ks);
+    /**
+     * @hide
+    */
+    boolean rescanPackages(int mode);
 }

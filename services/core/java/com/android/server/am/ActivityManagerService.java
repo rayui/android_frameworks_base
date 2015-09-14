@@ -88,6 +88,7 @@ import com.android.server.pm.UserManagerService;
 import com.android.server.statusbar.StatusBarManagerInternal;
 import com.android.server.wm.AppTransition;
 import com.android.server.wm.WindowManagerService;
+import com.android.server.zygotesecondary.ZygoteSecondary;
 import com.google.android.collect.Lists;
 import com.google.android.collect.Maps;
 
@@ -235,6 +236,8 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.droidlogic.instaboot.InstabootManagerService;
+
 public final class ActivityManagerService extends ActivityManagerNative
         implements Watchdog.Monitor, BatteryStatsImpl.BatteryCallback {
 
@@ -304,6 +307,9 @@ public final class ActivityManagerService extends ActivityManagerNative
     // How long we wait for a launched process to attach to the activity manager
     // before we decide it's never going to come up for real.
     static final int PROC_START_TIMEOUT = 10*1000;
+
+    // PROC_START_TIMEOUT for instaboot
+    static final int PROC_START_TIMEOUT_INSTABOOT = 30*1000;
 
     // How long we wait for a launched process to attach to the activity manager
     // before we decide it's never going to come up for real, when the process was
@@ -1187,6 +1193,7 @@ public final class ActivityManagerService extends ActivityManagerNative
     int mProcessLimitOverride = -1;
 
     WindowManagerService mWindowManager;
+    InstabootManagerService mInstabootManager = null;
 
     final ActivityThread mSystemThread;
 
@@ -1271,6 +1278,8 @@ public final class ActivityManagerService extends ActivityManagerNative
     static final int SEND_LOCALE_TO_MOUNT_DAEMON_MSG = 47;
     static final int DISMISS_DIALOG_MSG = 48;
     static final int NOTIFY_TASK_STACK_CHANGE_LISTENERS_MSG = 49;
+    static final int START_PESIT_ACTIVITY = 50;
+    static final int START_HOLD_ON_APP = 51;
 
     static final int FIRST_ACTIVITY_STACK_MSG = 100;
     static final int FIRST_BROADCAST_QUEUE_MSG = 200;
@@ -1279,6 +1288,7 @@ public final class ActivityManagerService extends ActivityManagerNative
 
     CompatModeDialog mCompatModeDialog;
     long mLastMemUsageReportTime = 0;
+    private boolean mLauncherDisplayed = false;
 
     /**
      * Flag whether the current user is a "monkey", i.e. whether
@@ -1296,6 +1306,19 @@ public final class ActivityManagerService extends ActivityManagerNative
     final ServiceThread mHandlerThread;
     final MainHandler mHandler;
 
+    public void updateLauncherDisplayStatus(){
+        if (mInstabootManager != null) {
+            mInstabootManager.onLauncherd();
+
+            if (mLauncherDisplayed == false) {
+                Message msg = Message.obtain();
+                msg.what = START_HOLD_ON_APP;
+                mHandler.sendMessage(msg);
+                mLauncherDisplayed = true;
+            }
+        }
+    }
+
     final class MainHandler extends Handler {
         public MainHandler(Looper looper) {
             super(looper, null, true);
@@ -1304,6 +1327,22 @@ public final class ActivityManagerService extends ActivityManagerNative
         @Override
         public void handleMessage(Message msg) {
             switch (msg.what) {
+            case START_PESIT_ACTIVITY:
+                break;
+            case START_HOLD_ON_APP:
+                synchronized (this) {
+                   final int NP = mProcessesOnHold.size();
+                   if (NP > 0) {
+                       ArrayList<ProcessRecord> procs =
+                           new ArrayList<ProcessRecord>(mProcessesOnHold);
+                       for (int ip=0; ip<NP; ip++) {
+                           if (DEBUG_PROCESSES) Slog.v(TAG, "Starting process on hold: "
+                                + procs.get(ip));
+                           startProcessLocked(procs.get(ip), "on-hold", null);
+                       }
+                   }
+                }
+                break;
             case SHOW_ERROR_MSG: {
                 HashMap<String, Object> data = (HashMap<String, Object>) msg.obj;
                 boolean showBackground = Settings.Secure.getInt(mContext.getContentResolver(),
@@ -1441,6 +1480,12 @@ public final class ActivityManagerService extends ActivityManagerNative
                 }
             } break;
             case SERVICE_TIMEOUT_MSG: {
+                if (mInstabootManager != null && !mLauncherDisplayed) {
+                    Message nmsg = mHandler.obtainMessage(SERVICE_TIMEOUT_MSG);
+                    nmsg.obj = msg.obj;
+                    mHandler.sendMessageDelayed(nmsg, ActiveServices.SERVICE_TIMEOUT_INSTABOOT);
+                    return;
+                }
                 if (mDidDexOpt) {
                     mDidDexOpt = false;
                     Message nmsg = mHandler.obtainMessage(SERVICE_TIMEOUT_MSG);
@@ -1529,6 +1574,12 @@ public final class ActivityManagerService extends ActivityManagerNative
                 }
             } break;
             case PROC_START_TIMEOUT_MSG: {
+                if (mInstabootManager != null && !mLauncherDisplayed) {
+                    Message nmsg = mHandler.obtainMessage(PROC_START_TIMEOUT_MSG);
+                    nmsg.obj = msg.obj;
+                    mHandler.sendMessageDelayed(nmsg, PROC_START_TIMEOUT_INSTABOOT);
+                    return;
+                }
                 if (mDidDexOpt) {
                     mDidDexOpt = false;
                     Message nmsg = mHandler.obtainMessage(PROC_START_TIMEOUT_MSG);
@@ -1938,6 +1989,10 @@ public final class ActivityManagerService extends ActivityManagerNative
     public void setWindowManager(WindowManagerService wm) {
         mWindowManager = wm;
         mStackSupervisor.setWindowManager(wm);
+    }
+
+    public void setInstabootManager(InstabootManagerService sm) {
+        mInstabootManager = sm;
     }
 
     public void setUsageStatsManager(UsageStatsManagerInternal usageStatsManager) {
@@ -2691,9 +2746,14 @@ public final class ActivityManagerService extends ActivityManagerNative
             // should never happen).
             SparseArray<ProcessRecord> procs = mProcessNames.getMap().get(processName);
             if (procs == null) return null;
-            final int N = procs.size();
-            for (int i = 0; i < N; i++) {
-                if (UserHandle.isSameUser(procs.keyAt(i), uid)) return procs.valueAt(i);
+            final int procCount = procs.size();
+            for (int i = 0; i < procCount; i++) {
+                final int procUid = procs.keyAt(i);
+                if (UserHandle.isApp(procUid) || !UserHandle.isSameUser(procUid, uid)) {
+                    // Don't use an app process or different user process for system component.
+                    continue;
+                }
+                return procs.valueAt(i);
             }
         }
         ProcessRecord proc = mProcessNames.get(processName, uid);
@@ -2868,13 +2928,14 @@ public final class ActivityManagerService extends ActivityManagerNative
 
         // If the system is not ready yet, then hold off on starting this
         // process until it is.
-        if (!mProcessesReady
+        boolean holdon = (mInstabootManager != null)?mInstabootManager.isHoldonApp(processName):false;
+        if (holdon || (!mProcessesReady
                 && !isAllowedWhileBooting(info)
-                && !allowWhileBooting) {
+                && !allowWhileBooting)) {
             if (!mProcessesOnHold.contains(app)) {
                 mProcessesOnHold.add(app);
             }
-            if (DEBUG_PROCESSES) Slog.v(TAG, "System not ready, putting on hold: " + app);
+            Slog.v(TAG, "System not ready, putting on hold: " + app);
             checkTime(startTime, "startProcess: returning with proc on hold");
             return app;
         }
@@ -3063,8 +3124,13 @@ public final class ActivityManagerService extends ActivityManagerNative
                 if (isActivityProcess) {
                     Message msg = mHandler.obtainMessage(PROC_START_TIMEOUT_MSG);
                     msg.obj = app;
-                    mHandler.sendMessageDelayed(msg, startResult.usingWrapper
-                            ? PROC_START_TIMEOUT_WITH_WRAPPER : PROC_START_TIMEOUT);
+                    if (mInstabootManager != null && !mLauncherDisplayed) {
+                        mHandler.sendMessageDelayed(msg, startResult.usingWrapper
+                                ? PROC_START_TIMEOUT_WITH_WRAPPER : PROC_START_TIMEOUT_INSTABOOT);
+                    } else {
+                        mHandler.sendMessageDelayed(msg, startResult.usingWrapper
+                                ? PROC_START_TIMEOUT_WITH_WRAPPER : PROC_START_TIMEOUT);
+                    }
                 }
             }
             checkTime(startTime, "startProcess: done updating pids map");
@@ -6155,8 +6221,29 @@ public final class ActivityManagerService extends ActivityManagerNative
             mCallFinishBooting = false;
         }
 
+        boolean needAbiFilter = false;
+        ArrayList<String> secondaryAbiList = new ArrayList<String>();
+        boolean enable = SystemProperties.get(
+            ZygoteSecondary.RO_DYNAMIC_ZYGOTE_SECONDARY, "disable").equals("enable");
+        if (enable) {
+            // If zygote_secondary service doesn't start, skip secondary abi
+            String zygote = SystemProperties.get("ro.zygote", "zygote32");
+            if (zygote.equals("zygote64_32")) {
+                java.util.Collections.addAll(secondaryAbiList, Build.SUPPORTED_32_BIT_ABIS);
+            } else if (zygote.equals("zygote32_64")) {
+                java.util.Collections.addAll(secondaryAbiList, Build.SUPPORTED_64_BIT_ABIS);
+            }
+            needAbiFilter = (secondaryAbiList.size() > 0) &&
+                SystemProperties.get(ZygoteSecondary.SYS_ZYGOTE_SECONDARY, "stop")
+                .equals("stop");
+        }
+
         ArraySet<String> completedIsas = new ArraySet<String>();
         for (String abi : Build.SUPPORTED_ABIS) {
+            if (enable && needAbiFilter && secondaryAbiList.contains(abi)) {
+                Slog.i(ZygoteSecondary.TAG, "filter abi: " + abi);
+                continue;
+            }
             Process.establishZygoteConnectionForAbi(abi);
             final String instructionSet = VMRuntime.getInstructionSet(abi);
             if (!completedIsas.contains(instructionSet)) {
@@ -6194,18 +6281,21 @@ public final class ActivityManagerService extends ActivityManagerNative
         synchronized (this) {
             // Ensure that any processes we had put on hold are now started
             // up.
-            final int NP = mProcessesOnHold.size();
-            if (NP > 0) {
-                ArrayList<ProcessRecord> procs =
-                    new ArrayList<ProcessRecord>(mProcessesOnHold);
-                for (int ip=0; ip<NP; ip++) {
-                    if (DEBUG_PROCESSES) Slog.v(TAG, "Starting process on hold: "
-                            + procs.get(ip));
-                    startProcessLocked(procs.get(ip), "on-hold", null);
+            if (mInstabootManager == null) {
+                final int NP = mProcessesOnHold.size();
+                if (NP > 0) {
+                    ArrayList<ProcessRecord> procs =
+                        new ArrayList<ProcessRecord>(mProcessesOnHold);
+                    for (int ip=0; ip<NP; ip++) {
+                        if (DEBUG_PROCESSES) Slog.v(TAG, "Starting process on hold: "
+                                + procs.get(ip));
+                        startProcessLocked(procs.get(ip), "on-hold", null);
+                    }
                 }
             }
 
-            if (mFactoryTest != FactoryTest.FACTORY_TEST_LOW_LEVEL) {
+            if ((mInstabootManager == null || !mInstabootManager.isEnable()) &&
+                (mFactoryTest != FactoryTest.FACTORY_TEST_LOW_LEVEL)) {
                 // Start looking for apps that are abusing wake locks.
                 Message nmsg = mHandler.obtainMessage(CHECK_EXCESSIVE_WAKE_LOCKS_MSG);
                 mHandler.sendMessageDelayed(nmsg, POWER_CHECK_DELAY);
@@ -8122,7 +8212,7 @@ public final class ActivityManagerService extends ActivityManagerNative
         }
         if (!allowed) {
             Slog.w(TAG, caller + ": caller " + callingUid
-                    + " does not hold GET_TASKS; limiting output");
+                    + " does not hold REAL_GET_TASKS; limiting output");
         }
         return allowed;
     }
@@ -11228,7 +11318,9 @@ public final class ActivityManagerService extends ActivityManagerNative
                 mDidUpdate = true;
             }
 
-            mAppOpsService.systemReady();
+            if (mInstabootManager == null) {
+                mAppOpsService.systemReady();
+            }
             mSystemReady = true;
         }
 
@@ -11244,7 +11336,7 @@ public final class ActivityManagerService extends ActivityManagerNative
                 }
             }
         }
-        
+
         synchronized(this) {
             if (procsToKill != null) {
                 for (int i=procsToKill.size()-1; i>=0; i--) {
@@ -11253,7 +11345,7 @@ public final class ActivityManagerService extends ActivityManagerNative
                     removeProcessLocked(proc, true, false, "system update done");
                 }
             }
-            
+
             // Now that we have cleaned up any update processes, we
             // are ready to start launching real processes and know that
             // we won't trample on them any more.
@@ -11339,7 +11431,8 @@ public final class ActivityManagerService extends ActivityManagerNative
 
             // Start up initial activity.
             mBooting = true;
-            startHomeActivityLocked(mCurrentUserId, "systemReady");
+            if (mInstabootManager == null || !mInstabootManager.startHomeAfterSnapshot())
+                startHomeActivityLocked(mCurrentUserId, "systemReady");
 
             try {
                 if (AppGlobals.getPackageManager().hasSystemUidErrors()) {
@@ -11382,6 +11475,52 @@ public final class ActivityManagerService extends ActivityManagerNative
             } finally {
                 Binder.restoreCallingIdentity(ident);
             }
+
+            if (mInstabootManager != null && mFactoryTest == FactoryTest.FACTORY_TEST_OFF) {
+                mInstabootManager.onRestored(new Runnable() {
+                public void run() {
+                    Slog.i(TAG, "Sending boot compeleted");
+                    synchronized (this) {
+                        mAppOpsService.systemReady();
+
+                        // Start looking for apps that are abusing wake locks.
+                        Message nmsg = mHandler.obtainMessage(CHECK_EXCESSIVE_WAKE_LOCKS_MSG);
+                        mHandler.sendMessageDelayed(nmsg, POWER_CHECK_DELAY);
+                        // Tell anyone interested that we are done booting!
+                        SystemProperties.set("sys.boot_completed", "1");
+                        SystemProperties.set("dev.bootcomplete", "1");
+                        for (int i=0; i<mStartedUsers.size(); i++) {
+                            UserStartedState uss = mStartedUsers.valueAt(i);
+                            if (uss.mState == UserStartedState.STATE_BOOTING) {
+                                 uss.mState = UserStartedState.STATE_RUNNING;
+                                 final int userId = mStartedUsers.keyAt(i);
+                                 Intent intent = new Intent(Intent.ACTION_BOOT_COMPLETED, null);
+                                 intent.putExtra(Intent.EXTRA_USER_HANDLE, userId);
+                                 intent.addFlags(Intent.FLAG_RECEIVER_NO_ABORT);
+                                 broadcastIntentLocked(null, null, intent, null,
+                                         new IIntentReceiver.Stub() {
+                                             @Override
+                                             public void performReceive(Intent intent, int resultCode,
+                                                     String data, Bundle extras, boolean ordered,
+                                                     boolean sticky, int sendingUser) {
+                                                 synchronized (ActivityManagerService.this) {
+                                                     requestPssAllProcsLocked(SystemClock.uptimeMillis(),
+                                                             true, false);
+                                                 }
+                                             }
+                                         },
+                                         0, null, null,
+                                         android.Manifest.permission.RECEIVE_BOOT_COMPLETED,
+                                         AppOpsManager.OP_NONE, true, false, MY_PID, Process.SYSTEM_UID,
+                                         userId);
+                            }
+                        }
+                    }
+               }});
+               mAppOpsService.reload();
+            }
+            if (mInstabootManager != null && mInstabootManager.startHomeAfterSnapshot())
+                startHomeActivityLocked(mCurrentUserId, "systemReady");
             mStackSupervisor.resumeTopActivitiesLocked();
             sendUserSwitchBroadcastsLocked(-1, mCurrentUserId);
         }
@@ -12241,16 +12380,23 @@ public final class ActivityManagerService extends ActivityManagerNative
 
     public List<ActivityManager.RunningAppProcessInfo> getRunningAppProcesses() {
         enforceNotIsolatedCaller("getRunningAppProcesses");
+
+        final int callingUid = Binder.getCallingUid();
+
         // Lazy instantiation of list
         List<ActivityManager.RunningAppProcessInfo> runList = null;
         final boolean allUsers = ActivityManager.checkUidPermission(INTERACT_ACROSS_USERS_FULL,
-                Binder.getCallingUid()) == PackageManager.PERMISSION_GRANTED;
-        int userId = UserHandle.getUserId(Binder.getCallingUid());
+                callingUid) == PackageManager.PERMISSION_GRANTED;
+        final int userId = UserHandle.getUserId(callingUid);
+        final boolean allUids = isGetTasksAllowed(
+                "getRunningAppProcesses", Binder.getCallingPid(), callingUid);
+
         synchronized (this) {
             // Iterate across all processes
-            for (int i=mLruProcesses.size()-1; i>=0; i--) {
+            for (int i = mLruProcesses.size() - 1; i >= 0; i--) {
                 ProcessRecord app = mLruProcesses.get(i);
-                if (!allUsers && app.userId != userId) {
+                if ((!allUsers && app.userId != userId)
+                        || (!allUids && app.uid != callingUid)) {
                     continue;
                 }
                 if ((app.thread != null) && (!app.crashing && !app.notResponding)) {
@@ -12274,7 +12420,7 @@ public final class ActivityManagerService extends ActivityManagerNative
                     //Slog.v(TAG, "Proc " + app.processName + ": imp=" + currApp.importance
                     //        + " lru=" + currApp.lru);
                     if (runList == null) {
-                        runList = new ArrayList<ActivityManager.RunningAppProcessInfo>();
+                        runList = new ArrayList<>();
                     }
                     runList.add(currApp);
                 }

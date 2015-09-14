@@ -1341,6 +1341,11 @@ static void nativeMonitor(JNIEnv* env, jclass clazz, jlong ptr) {
     im->getInputManager()->getDispatcher()->monitor();
 }
 
+static void nativeSetTvOutStatus(JNIEnv* env,
+        jclass clazz, jlong ptr, jboolean on) {
+    NativeInputManager* im = reinterpret_cast<NativeInputManager*>(ptr);
+    im->getInputManager()->getReader()->setTvOutStatus(on);
+}
 // ----------------------------------------------------------------------------
 
 static JNINativeMethod gInputManagerMethods[] = {
@@ -1399,6 +1404,8 @@ static JNINativeMethod gInputManagerMethods[] = {
             (void*) nativeDump },
     { "nativeMonitor", "(J)V",
             (void*) nativeMonitor },
+    { "nativeSetTvOutStatus","(JZ)V",
+            (void*) nativeSetTvOutStatus},
 };
 
 #define FIND_CLASS(var, className) \

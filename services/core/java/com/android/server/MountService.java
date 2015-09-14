@@ -196,6 +196,14 @@ class MountService extends IMountService.Stub
         public static final int VolumeDiskRemoved              = 631;
         public static final int VolumeBadRemoval               = 632;
 
+        //dig series
+        //data remount as read only by kernel
+        public static final int DigReport_DataReadOnly         = 650;
+        //cannot mount data
+        public static final int DigReport_DataCrash            = 651;
+        //system file change
+        public static final int DigReport_SystemChanged        = 652;
+
         /*
          * 700 series - fstrim
          */
@@ -760,7 +768,8 @@ class MountService extends IMountService.Stub
 
         // Tell PackageManager about changes to primary volume state, but only
         // when not emulated.
-        if (volume.isPrimary() && !volume.isEmulated()) {
+        // now only support sdcard not udist
+        if (volume.getPath().indexOf("sdcard") != -1 && !volume.isEmulated())  {
             if (Environment.MEDIA_UNMOUNTED.equals(state)) {
                 mPms.updateExternalMediaStatus(false, false);
 
@@ -1023,6 +1032,21 @@ class MountService extends IMountService.Stub
             if (action != null) {
                 sendStorageIntent(action, volume, UserHandle.ALL);
             }
+        } else if (code == VoldResponseCode.DigReport_DataReadOnly) {
+            Slog.w(TAG, "DigReport: DataReadOnlySending");
+            final Intent intent = new Intent("com.droidlogic.dig.DATA_READ_ONLY");
+            mContext.sendBroadcastAsUser(intent, UserHandle.ALL);
+        } else if (code == VoldResponseCode.DigReport_DataCrash) {
+            Slog.w(TAG, "DigReport: DataCrash");
+            final Intent intent = new Intent("com.droidlogic.dig.DATA_CRASH");
+            mContext.sendBroadcastAsUser(intent, UserHandle.ALL);
+        } else if (code == VoldResponseCode.DigReport_SystemChanged) {
+            Slog.w(TAG, "DigReport: SystemChanged");
+            final Intent intent = new Intent("com.droidlogic.dig.SYSTEM_CHANGED");
+            final String path = (cooked.length > 3) ? cooked[3] : null;
+            if (path != null) intent.putExtra("error_file_path", path);
+            Slog.w(TAG, "DigReport: SystemChanged"+path);
+            mContext.sendBroadcastAsUser(intent, UserHandle.ALL);
         } else {
             return false;
         }
@@ -1996,11 +2020,12 @@ class MountService extends IMountService.Stub
             }
         }
 
-        if (rc == StorageResultCode.OperationSucceeded) {
+        // external volume was aleady unmounted by vold, So result code is failed
+        //if (rc == StorageResultCode.OperationSucceeded) {
             synchronized (mAsecMountSet) {
                 mAsecMountSet.remove(id);
             }
-        }
+        //}
         return rc;
     }
 

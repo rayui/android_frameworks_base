@@ -52,6 +52,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import android.os.SystemClock;
+
 /**
  * Keeps the lock pattern/password data and related settings for each user.
  * Used by LockPatternUtils. Needs to be a service because Settings app also needs
@@ -70,6 +72,9 @@ public class LockSettingsService extends ILockSettings.Stub {
 
     private LockPatternUtils mLockPatternUtils;
     private boolean mFirstCallToVold;
+
+    private boolean mFreezed = false;
+    private boolean mDisableInstaboot = true;
 
     public LockSettingsService(Context context) {
         mContext = context;
@@ -94,6 +99,7 @@ public class LockSettingsService extends ILockSettings.Stub {
                 }
             }
         });
+        mDisableInstaboot = SystemProperties.getBoolean("config.disable_instaboot", true);
     }
 
     private final BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
@@ -220,10 +226,25 @@ public class LockSettingsService extends ILockSettings.Stub {
     @Override
     public void setString(String key, String value, int userId) throws RemoteException {
         checkWritePermission(userId);
+        if (!mDisableInstaboot) {
+            if (key.equals("instaboot")) {
+                if (value.equals("freeze")) {
+                    mFreezed = true;
+                    mStorage.closeDatabase();
+                } else if ( value.equals("refresh")) {
+                    mFreezed = false;
+                }
+                return;
+            }
+        }
         setStringUnchecked(key, userId, value);
     }
 
     private void setStringUnchecked(String key, int userId, String value) {
+        while (mFreezed) {
+            Slog.i(TAG, "writeToDb waiting");
+            SystemClock.sleep(1000);
+        }
         mStorage.writeKeyValue(key, value, userId);
     }
 
@@ -393,7 +414,10 @@ public class LockSettingsService extends ILockSettings.Stub {
     @Override
     public void removeUser(int userId) {
         checkWritePermission(userId);
-
+        while (mFreezed) {
+            Slog.i(TAG, "removeUser waiting");
+            SystemClock.sleep(1000);
+        }
         mStorage.removeUser(userId);
 
         final KeyStore ks = KeyStore.getInstance();

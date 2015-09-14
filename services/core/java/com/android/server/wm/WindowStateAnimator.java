@@ -844,11 +844,17 @@ class WindowStateAnimator {
                 final boolean isHwAccelerated = (attrs.flags &
                         WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED) != 0;
                 final int format = isHwAccelerated ? PixelFormat.TRANSLUCENT : attrs.format;
+                boolean isNeedOpaque = true;
+                String attrsTitle = attrs.getTitle().toString();
+                if (attrsTitle.contains("xbmc.Main") || attrsTitle.contains("xbmc.kodi")
+                        || attrsTitle.contains("org.videonme") || attrsTitle.contains("org.xbmc"))
+                    isNeedOpaque = false;
                 if (!PixelFormat.formatHasAlpha(attrs.format)
                         && attrs.surfaceInsets.left == 0
                         && attrs.surfaceInsets.top == 0
                         && attrs.surfaceInsets.right == 0
-                        && attrs.surfaceInsets.bottom  == 0) {
+                        && attrs.surfaceInsets.bottom  == 0
+                        && isNeedOpaque) {
                     flags |= SurfaceControl.OPAQUE;
                 }
 

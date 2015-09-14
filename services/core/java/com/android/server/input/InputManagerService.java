@@ -52,6 +52,9 @@ import android.hardware.input.IInputManager;
 import android.hardware.input.InputDeviceIdentifier;
 import android.hardware.input.InputManager;
 import android.hardware.input.InputManagerInternal;
+//for tv_begin
+import android.hardware.input.ITvKeyEventListener;
+//for tv_end
 import android.hardware.input.KeyboardLayout;
 import android.hardware.input.TouchCalibration;
 import android.os.Binder;
@@ -96,6 +99,7 @@ import java.util.HashSet;
 
 import libcore.io.Streams;
 import libcore.util.Objects;
+import android.os.SystemProperties;
 
 /*
  * Wraps the C++ InputManager and provides its callbacks.
@@ -119,6 +123,9 @@ public class InputManagerService extends IInputManager.Stub
     private final Context mContext;
     private final InputManagerHandler mHandler;
 
+    //for tv_begin
+    private  ITvKeyEventListener mTvKeyEventListener;
+    //for tv_end
     private WindowManagerCallbacks mWindowManagerCallbacks;
     private WiredAccessoryCallbacks mWiredAccessoryCallbacks;
     private boolean mSystemReady;
@@ -195,6 +202,7 @@ public class InputManagerService extends IInputManager.Stub
     private static native void nativeReloadDeviceAliases(long ptr);
     private static native String nativeDump(long ptr);
     private static native void nativeMonitor(long ptr);
+    private static native void nativeSetTvOutStatus(long ptr, boolean on);
 
     // Input event injection constants defined in InputDispatcher.h.
     private static final int INPUT_EVENT_INJECTION_SUCCEEDED = 0;
@@ -327,6 +335,27 @@ public class InputManagerService extends IInputManager.Stub
             @Override
             public void onReceive(Context context, Intent intent) {
                 reloadDeviceAliases();
+            }
+        }, filter, null, mHandler);
+
+        //Add for support osd cursor in hdmiswitchm mode
+        filter = new IntentFilter(WindowManagerPolicy.ACTION_HDMI_PLUGGED);
+        mContext.registerReceiver(new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                boolean mTVOutOn = intent.getBooleanExtra(WindowManagerPolicy.EXTRA_HDMI_PLUGGED_STATE, false);
+                Slog.i(TAG, "TvOut Intent receiver, tvout status="+ mTVOutOn);
+                if (SystemProperties.getBoolean("ro.vout.dualdisplay", false)
+                    || SystemProperties.getBoolean("ro.vout.dualdisplay2", false)
+                    || SystemProperties.getBoolean("ro.vout.dualdisplay3", false)
+                    ||SystemProperties.getBoolean("ro.vout.dualdisplay4", false)) {
+                    if (Settings.System.getInt(mContext.getContentResolver(),
+                        Settings.System.HDMI_DUAL_DISP, 1) != 1) {
+                        nativeSetTvOutStatus(mPtr, mTVOutOn);
+                    }
+                } else {
+                    nativeSetTvOutStatus(mPtr, mTVOutOn);
+                }
             }
         }, filter, null, mHandler);
 
@@ -611,6 +640,16 @@ public class InputManagerService extends IInputManager.Stub
             return mInputDevices;
         }
     }
+
+    //for tv_begin
+    @Override
+    public void registerTvKeyEventListener(ITvKeyEventListener listener) {
+        if (listener == null) {
+            throw new IllegalArgumentException("listener must not be null");
+        }
+        mTvKeyEventListener = listener;
+    }
+    //for tv_end
 
     @Override // Binder call
     public void registerInputDevicesChangedListener(IInputDevicesChangedListener listener) {
@@ -1463,6 +1502,18 @@ public class InputManagerService extends IInputManager.Stub
     // Native callback.
     private long interceptKeyBeforeDispatching(InputWindowHandle focus,
             KeyEvent event, int policyFlags) {
+        //for tv_begin
+        try {
+            if (mTvKeyEventListener != null) {
+                boolean result = mTvKeyEventListener.interceptKeyBeforeDispatchingByTv(event,policyFlags);
+                if (result)
+                    return -1;
+            }
+        }catch (RemoteException ex) {
+            Slog.w(TAG, "Failed to notify process ........tvmainservice ",ex);
+        }
+        //for tv_end
+
         return mWindowManagerCallbacks.interceptKeyBeforeDispatching(focus, event, policyFlags);
     }
 
