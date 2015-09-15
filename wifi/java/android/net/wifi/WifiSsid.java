@@ -85,6 +85,9 @@ public class WifiSsid implements Parcelable {
             switch (c) {
                 case '\\':
                     i++;
+                    if (i>= asciiEncoded.length()) {
+                        break;
+                    }
                     switch(asciiEncoded.charAt(i)) {
                         case '\\':
                             octets.write('\\');
