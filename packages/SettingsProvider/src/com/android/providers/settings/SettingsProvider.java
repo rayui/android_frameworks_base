@@ -385,6 +385,7 @@ public class SettingsProvider extends ContentProvider {
             mShutdown = true;
         }
 
+/*
         for (int i = 0; i < sObserverInstances.size(); i++) {
             FileObserver observer = sObserverInstances.get(i);
             if (observer != null) {
@@ -392,13 +393,13 @@ public class SettingsProvider extends ContentProvider {
                 sObserverInstances.delete(i);
             }
         }
-
+*/
         for (int i = 0; i < mOpenHelpers.size(); i++) {
             DatabaseHelper dbhelper = mOpenHelpers.get(i);
             dbhelper.close();
             mOpenHelpers.delete(i);
         }
-
+/*
         for (int i = 0; i < sSystemCaches.size(); i++) {
             sSystemCaches.delete(i);
         }
@@ -415,6 +416,7 @@ public class SettingsProvider extends ContentProvider {
         for (int i = 0; i < sKnownMutationsInFlight.size(); i++) {
             sKnownMutationsInFlight.delete(i);
         }
+*/
     }
 
     @Override
