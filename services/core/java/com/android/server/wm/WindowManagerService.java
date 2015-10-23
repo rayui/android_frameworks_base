@@ -9014,8 +9014,8 @@ public class WindowManagerService extends IWindowManager.Stub
             if (DEBUG_ORIENTATION) Slog.v(TAG, "Changing surface while display frozen: " + w);
             w.mOrientationChanging = true;
             w.mLastFreezeDuration = 0;
-            mInnerFields.mOrientationChangeComplete = false;
             if (!mWindowsFreezingScreen) {
+                mInnerFields.mOrientationChangeComplete = false;
                 mWindowsFreezingScreen = true;
                 // XXX should probably keep timeout from
                 // when we first froze the display.
