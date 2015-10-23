@@ -110,10 +110,12 @@ import com.android.internal.statusbar.IStatusBarService;
 import com.android.internal.widget.PointerLocationView;
 import com.android.server.LocalServices;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
@@ -182,6 +184,9 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     static public final String SYSTEM_DIALOG_REASON_RECENT_APPS = "recentapps";
     static public final String SYSTEM_DIALOG_REASON_HOME_KEY = "homekey";
     static public final String SYSTEM_DIALOG_REASON_ASSIST = "assist";
+
+    static public final String ALLOW_APP_BACKGROUND_PATH = "/system/etc/allowbackgroundapp.list";
+    static private ArrayList<String> mBackAppList = new ArrayList<String>();
 
     /**
      * These are the system UI flags that, when changing, can cause the layout
@@ -1353,6 +1358,8 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         if (!mPowerManager.isInteractive()) {
             goingToSleep(WindowManagerPolicy.OFF_BECAUSE_OF_USER);
         }
+
+        initAllowpackageBackground();
     }
 
     /**
@@ -5967,8 +5974,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         startActivityAsUser(mHomeIntent, UserHandle.CURRENT);
 
         if (SystemProperties.getBoolean("ro.platform.has.mbxuimode", false)
-            && !SystemProperties.get("ro.platform.keepbackground.app", "").equals("all")
-            && !SystemProperties.get("ro.platform.keepbackground.app", "").contains(packageName)
+            && !checkAllowPackageBackground(packageName)
             && !getLauncherPackageName().contains(packageName)) {
             Handler killPackageHandler = new Handler(mContext.getMainLooper());
             killPackageHandler.postDelayed(new Runnable() {
@@ -5976,6 +5982,41 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                     am.forceStopPackage(packageName);
                }
             }, 500);
+        }
+    }
+
+    private void initAllowpackageBackground() {
+        String str = null;
+        mBackAppList.clear();
+        try {
+            File fl = new File(ALLOW_APP_BACKGROUND_PATH);
+            if (!fl.exists()) {
+                mBackAppList.add("all");
+                return;
+            }
+            FileReader fr = new FileReader(ALLOW_APP_BACKGROUND_PATH);
+            BufferedReader br = new BufferedReader(fr);
+            while ((str = br.readLine()) != null) {
+                if (str.equals("all")) {
+                    mBackAppList.clear();
+                    mBackAppList.add("all");
+                    break;
+                } else {
+                    mBackAppList.add(str);
+                }
+            };
+            br.close();
+            fr.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public boolean checkAllowPackageBackground(String pack) {
+        if (mBackAppList.contains("all") || mBackAppList.contains(pack)) {
+            return true;
+        } else {
+            return false;
         }
     }
 
