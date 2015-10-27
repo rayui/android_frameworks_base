@@ -3972,6 +3972,9 @@
     <!-- Storage description for internal storage. [CHAR LIMIT=NONE] -->
     <string name="storage_internal">Internal storage</string>
 
+    <!-- Storage description for internal fat storage. [CHAR LIMIT=NONE] -->
+    <string name="storage_internal2">Internal FAT storage</string>
+
     <!-- Storage description for the SD card. [CHAR LIMIT=NONE] -->
     <string name="storage_sd_card">SD card</string>
 
