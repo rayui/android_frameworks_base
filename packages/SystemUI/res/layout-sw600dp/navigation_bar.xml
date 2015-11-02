@@ -53,6 +53,23 @@
                 android:layout_height="match_parent"
                 android:layout_weight="1"
                 />
+            <com.android.systemui.statusbar.policy.KeyButtonView android:id="@+id/vol_minus"
+                android:layout_width="80dp" android:paddingLeft="15dp" android:paddingRight="15dp"
+                android:layout_height="match_parent"
+                android:src="@drawable/ic_sysbar_minus"
+                android:scaleType="centerInside"
+                android:layout_weight="0"
+                android:contentDescription="@string/accessibility_recent"
+                />
+            <com.android.systemui.statusbar.policy.KeyButtonView android:id="@+id/vol_plus"
+                android:layout_width="80dp" android:paddingLeft="15dp" android:paddingRight="15dp"
+                android:layout_height="match_parent"
+                android:src="@drawable/ic_sysbar_plus"
+                android:scaleType="centerInside"
+                android:layout_weight="0"
+                android:contentDescription="@string/accessibility_recent"
+                />
+
             <com.android.systemui.statusbar.policy.KeyButtonView android:id="@+id/back"
                 android:layout_width="128dp" android:paddingStart="25dp" android:paddingEnd="25dp"
                 android:layout_height="match_parent"
@@ -80,7 +97,23 @@
                 android:layout_weight="0"
                 android:contentDescription="@string/accessibility_recent"
                 />
-            <Space
+            <com.android.systemui.statusbar.policy.KeyButtonView android:id="@+id/shutdown"
+                android:layout_width="80dp" android:paddingLeft="15dp" android:paddingRight="15dp"
+                android:layout_height="match_parent"
+                android:src="@drawable/ic_sysbar_shutdown"
+                android:scaleType="centerInside"
+                android:layout_weight="0"
+                android:contentDescription="@string/accessibility_recent"
+                />
+            <com.android.systemui.statusbar.policy.KeyButtonView android:id="@+id/screenshot"
+                android:layout_width="80dp" android:paddingLeft="15dp" android:paddingRight="15dp"
+                android:layout_height="match_parent"
+                android:src="@drawable/ic_sysbar_screenshot"
+                android:scaleType="centerInside"
+                android:layout_weight="0"
+                android:contentDescription="@string/accessibility_recent"
+                />
+            <Space 
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_weight="1"

@@ -28,12 +28,14 @@ import android.app.PendingIntent;
 import android.app.StatusBarManager;
 import android.content.BroadcastReceiver;
 import android.content.ComponentCallbacks2;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.IPackageManager;
 import android.content.res.Configuration;
 import android.content.res.Resources;
+import android.content.ServiceConnection;
 import android.database.ContentObserver;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -48,6 +50,7 @@ import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.inputmethodservice.InputMethodService;
 import android.media.AudioAttributes;
+import android.media.AudioManager;
 import android.media.MediaMetadata;
 import android.media.session.MediaController;
 import android.media.session.MediaSession;
@@ -59,6 +62,7 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Message;
+import android.os.Messenger;
 import android.os.PowerManager;
 import android.os.Process;
 import android.os.RemoteException;
@@ -82,6 +86,7 @@ import android.view.MotionEvent;
 import android.view.ThreadedRenderer;
 import android.view.VelocityTracker;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.ViewGroup.LayoutParams;
 import android.view.ViewStub;
 import android.view.WindowManager;
@@ -1062,6 +1067,27 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
         return mNaturalBarHeight;
     }
 
+    AudioManager mAudioManager;
+    private View.OnClickListener mVolDownClickListener = new View.OnClickListener() {
+        public void onClick(View v) {
+            if (mAudioManager == null)
+                mAudioManager = (AudioManager)mContext.getSystemService(Context.AUDIO_SERVICE);
+
+            KeyEvent event = new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_VOLUME_DOWN);
+            mAudioManager.handleKeyDown(event, AudioManager.STREAM_MUSIC);
+        }
+    };
+
+    private View.OnClickListener mVolUpClickListener = new View.OnClickListener() {
+        public void onClick(View v) {
+            if (mAudioManager == null)
+                mAudioManager = (AudioManager)mContext.getSystemService(Context.AUDIO_SERVICE);
+
+            KeyEvent event = new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_VOLUME_UP);
+            mAudioManager.handleKeyDown(event, AudioManager.STREAM_MUSIC);
+        }
+    };
+
     private View.OnClickListener mRecentsClickListener = new View.OnClickListener() {
         public void onClick(View v) {
             awakenDreams();
@@ -1078,6 +1104,93 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
             return true;
         }
     };
+
+    private View.OnClickListener mShutdownClickListener = new View.OnClickListener() {
+        public void onClick(View v) {
+            PoweroffUtils.Poweroff();
+        }
+    };
+
+    private View.OnClickListener mScreenshotClickListener = new View.OnClickListener() {
+        public void onClick(View v) {
+            mHandler.postDelayed(mScreenshotChordLongPress,
+                        ViewConfiguration.getGlobalActionKeyTimeout());
+        }
+    };
+
+    private final Runnable mScreenshotChordLongPress = new Runnable() {
+        public void run() {
+            takeScreenshot();
+        }
+    };
+
+    final Object mScreenshotLock = new Object();
+    ServiceConnection mScreenshotConnection = null;
+
+    final Runnable mScreenshotTimeout = new Runnable() {
+        @Override public void run() {
+            synchronized (mScreenshotLock) {
+                if (mScreenshotConnection != null) {
+                    mContext.unbindService(mScreenshotConnection);
+                    mScreenshotConnection = null;
+                }
+            }
+        }
+    };
+
+    // Assume this is called from the Handler thread.
+    private void takeScreenshot() {
+        synchronized (mScreenshotLock) {
+            if (mScreenshotConnection != null) {
+                return;
+            }
+            ComponentName cn = new ComponentName("com.android.systemui",
+                    "com.android.systemui.screenshot.TakeScreenshotService");
+            Intent intent = new Intent();
+            intent.setComponent(cn);
+            ServiceConnection conn = new ServiceConnection() {
+                @Override
+                public void onServiceConnected(ComponentName name, IBinder service) {
+                    synchronized (mScreenshotLock) {
+                        if (mScreenshotConnection != this) {
+                            return;
+                        }
+                        Messenger messenger = new Messenger(service);
+                        Message msg = Message.obtain(null, 1);
+                        final ServiceConnection myConn = this;
+                        Handler h = new Handler(mHandler.getLooper()) {
+                            @Override
+                            public void handleMessage(Message msg) {
+                                synchronized (mScreenshotLock) {
+                                    if (mScreenshotConnection == myConn) {
+                                        mContext.unbindService(mScreenshotConnection);
+                                        mScreenshotConnection = null;
+                                        mHandler.removeCallbacks(mScreenshotTimeout);
+                                    }
+                                }
+                            }
+                        };
+                        msg.replyTo = new Messenger(h);
+                        msg.arg1 = msg.arg2 = 0;
+                        //if (mStatusBar != null && mStatusBar.isVisibleLw())
+                            msg.arg1 = 1;
+                        //if (mNavigationBar != null && mNavigationBar.isVisibleLw())
+                            msg.arg2 = 1;
+                        try {
+                            messenger.send(msg);
+                        } catch (RemoteException e) {
+                        }
+                    }
+                }
+                @Override
+                public void onServiceDisconnected(ComponentName name) {}
+            };
+            if (mContext.bindService(intent, conn, Context.BIND_AUTO_CREATE)) {
+                mScreenshotConnection = conn;
+                mHandler.postDelayed(mScreenshotTimeout, 10000);
+            }
+        }
+    }
 
     private final View.OnLongClickListener mLongPressHomeListener
             = new View.OnLongClickListener() {
@@ -1130,6 +1243,12 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
         mNavigationBarView.getHomeButton().setOnTouchListener(mHomeActionListener);
         mNavigationBarView.getHomeButton().setOnLongClickListener(mLongPressHomeListener);
         mAssistManager.onConfigurationChanged();
+        if (mNavigationBarView.getVolUpButton() != null) {
+            mNavigationBarView.getVolDownButton().setOnClickListener(mVolDownClickListener);
+            mNavigationBarView.getVolUpButton().setOnClickListener(mVolUpClickListener);
+            mNavigationBarView.getShutdownButton().setOnClickListener(mShutdownClickListener);
+            mNavigationBarView.getScreenshotButton().setOnClickListener(mScreenshotClickListener);
+        }
     }
 
     // For small-screen devices (read: phones) that lack hardware navigation buttons

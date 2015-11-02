@@ -251,6 +251,22 @@ public class NavigationBarView extends LinearLayout {
         return (KeyButtonView) mCurrentView.findViewById(R.id.home);
     }
 
+    public View getVolDownButton() {
+        return mCurrentView.findViewById(R.id.vol_minus);
+    }
+
+    public View getVolUpButton() {
+        return mCurrentView.findViewById(R.id.vol_plus);
+    }
+
+    public View getShutdownButton() {
+        return mCurrentView.findViewById(R.id.shutdown);
+    }
+
+    public View getScreenshotButton() {
+        return mCurrentView.findViewById(R.id.screenshot);
+    }
+
     public View getImeSwitchButton() {
         return mCurrentView.findViewById(R.id.ime_switcher);
     }
