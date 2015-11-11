@@ -1,4 +1,7 @@
 /*
+ * Copyright (c) 2013-2014, The Linux Foundation. All rights reserved.
+ * Not a Contribution.
+ *
  * Copyright (C) 2009-2014 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,6 +21,7 @@ package android.bluetooth;
 
 import android.annotation.SdkConstant;
 import android.annotation.SdkConstant.SdkConstantType;
+import android.app.ActivityThread;
 import android.bluetooth.le.BluetoothLeAdvertiser;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
@@ -571,7 +575,7 @@ public final class BluetoothAdapter {
             return true;
         }
         try {
-            return mManagerService.enable();
+            return mManagerService.enable(ActivityThread.currentPackageName());
         } catch (RemoteException e) {Log.e(TAG, "", e);}
         return false;
     }
@@ -1129,6 +1133,34 @@ public final class BluetoothAdapter {
     }
 
     /**
+     * Create a listening, secure L2CAP Bluetooth socket with Service Record.
+     * <p>A remote device connecting to this socket will be authenticated and
+     * communication on this socket will be encrypted.
+     * <p>Use {@link BluetoothServerSocket#accept} to retrieve incoming
+     * connections from a listening {@link BluetoothServerSocket}.
+     * <p>The system will assign an unused L2CAP PSM to listen on.
+     * <p>The system will also register a Service Discovery
+     * Protocol (SDP) record with the local SDP server containing the specified
+     * UUID, service name, and auto-assigned PSM number. Remote Bluetooth devices
+     * can use the same UUID to query our SDP server and discover which PSM
+     * to connect to. This SDP record will be removed when this socket is
+     * closed, or if this application closes unexpectedly.
+     * <p>Use {@link BluetoothDevice#createL2capSocketToServiceRecord} to
+     * connect to this socket from another device using the same {@link UUID}.
+     * <p>Requires {@link android.Manifest.permission#BLUETOOTH}
+     * @param name service name for SDP record
+     * @param uuid uuid for SDP record
+     * @return a listening L2CAP BluetoothServerSocket
+     * @throws IOException on error, for example Bluetooth not available, or
+     *                     insufficient permissions, or channel in use.
+     * @hide
+     */
+    public BluetoothServerSocket listenUsingL2capWithServiceRecord(String name, UUID uuid)
+            throws IOException {
+        return createNewL2capSocketAndRecord(name, uuid, true, true);
+    }
+
+    /**
      * Create a listening, insecure RFCOMM Bluetooth socket with Service Record.
      * <p>The link key is not required to be authenticated, i.e the communication may be
      * vulnerable to Man In the Middle attacks. For Bluetooth 2.1 devices,
@@ -1157,6 +1189,38 @@ public final class BluetoothAdapter {
     public BluetoothServerSocket listenUsingInsecureRfcommWithServiceRecord(String name, UUID uuid)
             throws IOException {
         return createNewRfcommSocketAndRecord(name, uuid, false, false);
+    }
+
+    /**
+     * Create a listening, insecure L2CAP Bluetooth socket with Service Record.
+     * <p>The link key is not required to be authenticated, i.e the communication may be
+     * vulnerable to Man In the Middle attacks. For Bluetooth 2.1 devices,
+     * the link will be encrypted, as encryption is mandartory.
+     * For legacy devices (pre Bluetooth 2.1 devices) the link will not
+     * be encrypted. Use {@link #listenUsingL2capWithServiceRecord}, if an
+     * encrypted and authenticated communication channel is desired.
+     * <p>Use {@link BluetoothServerSocket#accept} to retrieve incoming
+     * connections from a listening {@link BluetoothServerSocket}.
+     * <p>The system will assign an unused L2CAP PSM to listen on.
+     * <p>The system will also register a Service Discovery
+     * Protocol (SDP) record with the local SDP server containing the specified
+     * UUID, service name, and auto-assigned PSM number. Remote Bluetooth devices
+     * can use the same UUID to query our SDP server and discover which PSM
+     * to connect to. This SDP record will be removed when this socket is
+     * closed, or if this application closes unexpectedly.
+     * <p>Use {@link BluetoothDevice#createL2capSocketToServiceRecord} to
+     * connect to this socket from another device using the same {@link UUID}.
+     * <p>Requires {@link android.Manifest.permission#BLUETOOTH}
+     * @param name service name for SDP record
+     * @param uuid uuid for SDP record
+     * @return a listening L2CAP BluetoothServerSocket
+     * @throws IOException on error, for example Bluetooth not available, or
+     *                     insufficient permissions, or channel in use.
+     * @hide
+     */
+    public BluetoothServerSocket listenUsingInsecureL2capWithServiceRecord(String name, UUID uuid)
+            throws IOException {
+        return createNewL2capSocketAndRecord(name, uuid, false, false);
     }
 
      /**
@@ -1202,6 +1266,22 @@ public final class BluetoothAdapter {
             boolean auth, boolean encrypt) throws IOException {
         BluetoothServerSocket socket;
         socket = new BluetoothServerSocket(BluetoothSocket.TYPE_RFCOMM, auth,
+                        encrypt, new ParcelUuid(uuid));
+        socket.setServiceName(name);
+        int errno = socket.mSocket.bindListen();
+        if (errno != 0) {
+            //TODO(BT): Throw the same exception error code
+            // that the previous code was using.
+            //socket.mSocket.throwErrnoNative(errno);
+            throw new IOException("Error: " + errno);
+        }
+        return socket;
+    }
+
+    private BluetoothServerSocket createNewL2capSocketAndRecord(String name, UUID uuid,
+            boolean auth, boolean encrypt) throws IOException {
+        BluetoothServerSocket socket;
+        socket = new BluetoothServerSocket(BluetoothSocket.TYPE_L2CAP, auth,
                         encrypt, new ParcelUuid(uuid));
         socket.setServiceName(name);
         int errno = socket.mSocket.bindListen();
@@ -1347,6 +1427,12 @@ public final class BluetoothAdapter {
         } else if (profile == BluetoothProfile.PAN) {
             BluetoothPan pan = new BluetoothPan(context, listener);
             return true;
+        } else if (profile == BluetoothProfile.DUN) {
+            BluetoothDun dun = new BluetoothDun(context, listener);
+            return true;
+        } else if (profile == BluetoothProfile.SAP) {
+            BluetoothSap sap = new BluetoothSap(context, listener);
+            return true;
         } else if (profile == BluetoothProfile.HEALTH) {
             BluetoothHealth health = new BluetoothHealth(context, listener);
             return true;
@@ -1355,6 +1441,9 @@ public final class BluetoothAdapter {
             return true;
         } else if (profile == BluetoothProfile.HEADSET_CLIENT) {
             BluetoothHeadsetClient headsetClient = new BluetoothHeadsetClient(context, listener);
+            return true;
+        } else if (profile == BluetoothProfile.HID_DEVICE) {
+            BluetoothHidDevice hidd = new BluetoothHidDevice(context, listener);
             return true;
         } else {
             return false;
@@ -1400,6 +1489,13 @@ public final class BluetoothAdapter {
                 BluetoothPan pan = (BluetoothPan)proxy;
                 pan.close();
                 break;
+            case BluetoothProfile.DUN:
+                BluetoothDun dun = (BluetoothDun)proxy;
+                dun.close();
+            case BluetoothProfile.SAP:
+                BluetoothSap sap = (BluetoothSap)proxy;
+                sap.close();
+                break;
             case BluetoothProfile.HEALTH:
                 BluetoothHealth health = (BluetoothHealth)proxy;
                 health.close();
@@ -1419,6 +1515,10 @@ public final class BluetoothAdapter {
             case BluetoothProfile.HEADSET_CLIENT:
                 BluetoothHeadsetClient headsetClient = (BluetoothHeadsetClient)proxy;
                 headsetClient.close();
+                break;
+            case BluetoothProfile.HID_DEVICE:
+                BluetoothHidDevice hidd = (BluetoothHidDevice) proxy;
+                hidd.close();
                 break;
         }
     }
@@ -1654,6 +1754,7 @@ public final class BluetoothAdapter {
      */
     @Deprecated
     public boolean startLeScan(LeScanCallback callback) {
+        if (getState() != STATE_ON) return false;
         return startLeScan(null, callback);
     }
 
@@ -1761,6 +1862,7 @@ public final class BluetoothAdapter {
     @Deprecated
     public void stopLeScan(LeScanCallback callback) {
         if (DBG) Log.d(TAG, "stopLeScan()");
+        if (getState() != STATE_ON) return;
         BluetoothLeScanner scanner = getBluetoothLeScanner();
         if (scanner == null) {
             return;

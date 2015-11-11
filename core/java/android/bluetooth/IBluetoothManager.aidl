@@ -18,7 +18,9 @@ package android.bluetooth;
 
 import android.bluetooth.IBluetooth;
 import android.bluetooth.IBluetoothGatt;
+import android.bluetooth.IQBluetooth;
 import android.bluetooth.IBluetoothManagerCallback;
+import android.bluetooth.IQBluetoothManagerCallback;
 import android.bluetooth.IBluetoothProfileServiceConnection;
 import android.bluetooth.IBluetoothStateChangeCallback;
 
@@ -30,14 +32,17 @@ import android.bluetooth.IBluetoothStateChangeCallback;
 interface IBluetoothManager
 {
     IBluetooth registerAdapter(in IBluetoothManagerCallback callback);
+    IQBluetooth registerQAdapter(in IQBluetoothManagerCallback callback);
     void unregisterAdapter(in IBluetoothManagerCallback callback);
+    void unregisterQAdapter(in IQBluetoothManagerCallback callback);
     void registerStateChangeCallback(in IBluetoothStateChangeCallback callback);
     void unregisterStateChangeCallback(in IBluetoothStateChangeCallback callback);
     boolean isEnabled();
-    boolean enable();
+    boolean enable(String callingPackage);
     boolean enableNoAutoConnect();
     boolean disable(boolean persist);
     IBluetoothGatt getBluetoothGatt();
+    IQBluetooth getQBluetooth();
 
     boolean bindBluetoothProfileService(int profile, IBluetoothProfileServiceConnection proxy);
     void unbindBluetoothProfileService(int profile, IBluetoothProfileServiceConnection proxy);
