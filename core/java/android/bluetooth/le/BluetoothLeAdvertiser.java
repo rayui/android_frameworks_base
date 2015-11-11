@@ -267,7 +267,9 @@ public final class BluetoothLeAdvertiser {
                     Log.e(TAG, "Failed to start registeration", e);
                 }
                 if (mClientIf > 0 && mIsAdvertising) {
-                    mLeAdvertisers.put(mAdvertiseCallback, this);
+                    if (!mLeAdvertisers.containsKey(mAdvertiseCallback)) {
+                        mLeAdvertisers.put(mAdvertiseCallback, this);
+                    }
                 } else if (mClientIf <= 0) {
                     // Post internal error if registration failed.
                     postStartFailure(mAdvertiseCallback,
@@ -308,7 +310,7 @@ public final class BluetoothLeAdvertiser {
         public void onClientRegistered(int status, int clientIf) {
             Log.d(TAG, "onClientRegistered() - status=" + status + " clientIf=" + clientIf);
             synchronized (this) {
-                if (status == BluetoothGatt.GATT_SUCCESS) {
+                if (status == BluetoothGatt.GATT_SUCCESS && mBluetoothAdapter.isEnabled()) {
                     mClientIf = clientIf;
                     try {
                         mBluetoothGatt.startMultiAdvertising(mClientIf, mAdvertisement,
@@ -333,6 +335,9 @@ public final class BluetoothLeAdvertiser {
                         // Start success
                         mIsAdvertising = true;
                         postStartSuccess(mAdvertiseCallback, settings);
+                        if (!mLeAdvertisers.containsKey(mAdvertiseCallback)) {
+                            mLeAdvertisers.put(mAdvertiseCallback, this);
+                        }
                     } else {
                         // Start failure.
                         postStartFailure(mAdvertiseCallback, status);

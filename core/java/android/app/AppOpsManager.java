@@ -207,7 +207,11 @@ public class AppOpsManager {
     /** @hide Activate a VPN connection without user intervention. */
     public static final int OP_ACTIVATE_VPN = 47;
     /** @hide */
-    public static final int _NUM_OP = 48;
+    public static final int OP_WIFI_CHANGE = 48;
+    /** @hide */
+    public static final int OP_BLUETOOTH_CHANGE = 49;
+    /** @hide */
+    public static final int _NUM_OP = 50;
 
     /** Access to coarse location information. */
     public static final String OPSTR_COARSE_LOCATION =
@@ -285,6 +289,8 @@ public class AppOpsManager {
             OP_TOAST_WINDOW,
             OP_PROJECT_MEDIA,
             OP_ACTIVATE_VPN,
+            OP_WIFI_CHANGE,
+            OP_BLUETOOTH_CHANGE,
     };
 
     /**
@@ -340,6 +346,8 @@ public class AppOpsManager {
             null,
             null,
             OPSTR_ACTIVATE_VPN,
+            null,
+            null,
     };
 
     /**
@@ -395,6 +403,8 @@ public class AppOpsManager {
             "TOAST_WINDOW",
             "PROJECT_MEDIA",
             "ACTIVATE_VPN",
+            "WIFI_CHANGE",
+            "BLUETOOTH_CHANGE",
     };
 
     /**
@@ -450,6 +460,8 @@ public class AppOpsManager {
             null, // no permission for displaying toasts
             null, // no permission for projecting media
             null, // no permission for activating vpn
+            android.Manifest.permission.CHANGE_WIFI_STATE,
+            android.Manifest.permission.BLUETOOTH,
     };
 
     /**
@@ -506,6 +518,8 @@ public class AppOpsManager {
             UserManager.DISALLOW_CREATE_WINDOWS, // TOAST_WINDOW
             null, //PROJECT_MEDIA
             UserManager.DISALLOW_CONFIG_VPN, // ACTIVATE_VPN
+            null, //WIFI_CHANGE
+            null, //BLUETOOTH_CHANGE
     };
 
     /**
@@ -561,6 +575,8 @@ public class AppOpsManager {
             true, //TOAST_WINDOW
             false, //PROJECT_MEDIA
             false, //ACTIVATE_VPN
+            false, // WIFI_CHANGE
+            false, // BLUETOOTH_CHANGE
     };
 
     /**
@@ -615,6 +631,8 @@ public class AppOpsManager {
             AppOpsManager.MODE_ALLOWED,
             AppOpsManager.MODE_IGNORED, // OP_PROJECT_MEDIA
             AppOpsManager.MODE_IGNORED, // OP_ACTIVATE_VPN
+            AppOpsManager.MODE_ALLOWED,
+            AppOpsManager.MODE_ALLOWED,
     };
 
     /**
@@ -673,6 +691,8 @@ public class AppOpsManager {
             false,
             false,
             false,
+            false,     // OP_WIFI_CHANGE
+            false,     // OP_BLUETOOTH_CHANGE
     };
 
     private static HashMap<String, Integer> sOpStrToOp = new HashMap<String, Integer>();
