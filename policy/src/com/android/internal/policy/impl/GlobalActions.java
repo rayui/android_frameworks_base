@@ -259,9 +259,8 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
                     return true;
                 }
             });
-			
-		// first: reboot
-		//codewalker
+
+        // next: reboot
         mItems.add(
             new SinglePressAction(
                     com.android.internal.R.drawable.ic_lock_power_off,
@@ -269,7 +268,7 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
 
                 public void onPress() {
                     // shutdown by making sure radio and power are handled accordingly.
-                    mWindowManagerFuncs.reboot();
+                    mWindowManagerFuncs.reboot(true);
                 }
 
                 public boolean onLongPress() {
