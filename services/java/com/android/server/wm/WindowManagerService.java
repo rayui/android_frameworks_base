@@ -5271,8 +5271,8 @@ public class WindowManagerService extends IWindowManager.Stub
     }
 
     @Override
-    public void reboot() {
-        ShutdownThread.reboot(mContext, null, true);
+    public void reboot(boolean confirm) {
+        ShutdownThread.reboot(mContext, null, confirm);
     }
 
     @Override

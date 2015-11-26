@@ -268,7 +268,7 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
 
                 public void onPress() {
                     // shutdown by making sure radio and power are handled accordingly.
-                    mWindowManagerFuncs.reboot();
+                    mWindowManagerFuncs.reboot(true);
                 }
 
                 public boolean onLongPress() {
