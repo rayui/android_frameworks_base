@@ -5780,7 +5780,7 @@ void TouchInputMapper::setTvOutStatus(bool enabled){
             if ( !getDevice()->getConfiguration().tryGetProperty(String8("touch.tvout.padmouse"),
                  padmouseString) || padmouseString == "true" ) {
                     //mouse style: pointer or spot
-                    mParameters.deviceType = Parameters::DEVICE_TYPE_POINTER;
+                    //mParameters.deviceType = Parameters::DEVICE_TYPE_POINTER;
                     padmouseStatus = true;
                     mHdimiCfgChange = true;
                     ALOGW(" tvout touch screen set to padmouse mode ");
