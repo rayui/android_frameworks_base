@@ -220,11 +220,16 @@ public class EthernetService<syncronized> extends IEthernetManager.Stub{
 
             if (action.equals(Intent.ACTION_SCREEN_ON)) {
                 Slog.d(TAG, "ACTION_SCREEN_ON");
+                /*
                 if(getPersistedState() == 2){
                     mDelayedHandler.postDelayed(mResetInterface, 5*1000); // wait 5s for device ready
                 }
+                */
             } else if (action.equals(Intent.ACTION_SCREEN_OFF)) {
                 Slog.d(TAG, "ACTION_SCREEN_OFF");
+                Slog.d(TAG, "Never turn off ethernet!");
+                return;
+                /*
                 mDelayedHandler.removeCallbacks(mResetInterface);
                 ConnectivityManager mCM= (ConnectivityManager)mContext.getSystemService(Context.CONNECTIVITY_SERVICE);
                 String[] TetheredIfaces = mCM.getTetheredIfaces();
@@ -234,6 +239,7 @@ public class EthernetService<syncronized> extends IEthernetManager.Stub{
                     return ;
                 }
                 mTracker.stopInterface(false);
+                */
             }
         }
     };
