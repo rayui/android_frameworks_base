@@ -1291,6 +1291,10 @@ public interface IMountService extends IInterface {
                 }
                 case TRANSACTION_getVolumeList: {
                     data.enforceInterface(DESCRIPTOR);
+                    try {
+                        Thread.sleep(800);
+                    } catch (InterruptedException e) {
+                    }
                     StorageVolume[] result = getVolumeList();
                     reply.writeNoException();
                     reply.writeTypedArray(result, android.os.Parcelable.PARCELABLE_WRITE_RETURN_VALUE);
