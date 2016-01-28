@@ -1560,6 +1560,7 @@
   <java-symbol type="string" name="config_orientationSensorType" />
   <java-symbol type="string" name="faceunlock_multiple_failures" />
   <java-symbol type="string" name="global_action_power_off" />
+  <java-symbol type="string" name="global_action_reboot" />
   <java-symbol type="string" name="global_actions_airplane_mode_off_status" />
   <java-symbol type="string" name="global_actions_airplane_mode_on_status" />
   <java-symbol type="string" name="global_actions_toggle_airplane_mode" />
@@ -1578,6 +1579,7 @@
   <java-symbol type="style" name="Theme.ExpandedMenu" />
   <java-symbol type="string" name="forward_intent_to_owner" />
   <java-symbol type="string" name="forward_intent_to_work" />
+  <java-symbol type="drawable" name="ic_lock_power_reboot" />
 
   <!-- From services -->
   <java-symbol type="anim" name="screen_rotate_0_enter" />
