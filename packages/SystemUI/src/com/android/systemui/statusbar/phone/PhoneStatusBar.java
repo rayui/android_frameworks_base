@@ -80,6 +80,7 @@ import android.os.PowerManager;
 import android.os.Process;
 import android.os.RemoteException;
 import android.os.SystemClock;
+import android.os.SystemProperties;
 import android.os.UserHandle;
 import android.os.UserManager;
 import android.provider.Settings;
@@ -1303,6 +1304,28 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
             mNavigationBarView.getVolUpButton().setOnClickListener(mVolUpClickListener);
             mNavigationBarView.getShutdownButton().setOnClickListener(mShutdownClickListener);
             mNavigationBarView.getScreenshotButton().setOnClickListener(mScreenshotClickListener);
+            int rotation = SystemProperties.getInt("ro.sf.hwrotation", 0);
+            if (rotation == 90 || rotation == 270) {
+                View view = mNavigationBarView.getVolUpButton();
+                view.setLayoutParams(new LinearLayout.LayoutParams(
+                            40, LayoutParams.MATCH_PARENT));
+                view.setPadding(0, view.getPaddingTop(), 0, view.getPaddingBottom());
+
+                view = mNavigationBarView.getVolDownButton();
+                view.setLayoutParams(new LinearLayout.LayoutParams(
+                            40, LayoutParams.MATCH_PARENT));
+                view.setPadding(0, view.getPaddingTop(), 0, view.getPaddingBottom());
+
+                view = mNavigationBarView.getShutdownButton();
+                view.setLayoutParams(new LinearLayout.LayoutParams(
+                            40, LayoutParams.MATCH_PARENT));
+                view.setPadding(0, view.getPaddingTop(), 0, view.getPaddingBottom());
+
+                view = mNavigationBarView.getScreenshotButton();
+                view.setLayoutParams(new LinearLayout.LayoutParams(
+                            40, LayoutParams.MATCH_PARENT));
+                view.setPadding(0, view.getPaddingTop(), 0, view.getPaddingBottom());
+            }
         }
         updateSearchPanel();
     }
