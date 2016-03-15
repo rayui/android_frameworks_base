@@ -667,6 +667,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         mPowerKeyHandled = handled;
         if (!handled) {
             mHandler.postDelayed(mPowerLongPress, ViewConfiguration.getGlobalActionKeyTimeout());
+            mHandler.postDelayed(mPowerLongLongPress, ViewConfiguration.getGlobalActionKeyTimeout() * 5);
         }
     }
 
@@ -746,6 +747,16 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                 mWindowManagerFuncs.shutdown(resolvedBehavior == LONG_PRESS_POWER_SHUT_OFF);
                 break;
             }
+        }
+    };
+
+    private final Runnable mPowerLongLongPress = new Runnable() {
+        @Override
+        public void run() {
+            mPowerKeyHandled = true;
+            performHapticFeedbackLw(null, HapticFeedbackConstants.LONG_PRESS, false);
+            sendCloseSystemWindows(SYSTEM_DIALOG_REASON_GLOBAL_ACTIONS);
+            mWindowManagerFuncs.shutdown(false);
         }
     };
 
@@ -4008,6 +4019,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                     interceptPowerKeyDown(!isScreenOn || hungUp
                             || mVolumeDownKeyTriggered || mVolumeUpKeyTriggered);
                 } else {
+                    mHandler.removeCallbacks(mPowerLongLongPress);
                     mPowerKeyTriggered = false;
                     cancelPendingScreenshotChordAction();
                     if (interceptPowerKeyUp(canceled || mPendingPowerKeyUpCanceled)) {
