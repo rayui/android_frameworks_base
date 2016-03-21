@@ -510,7 +510,7 @@ public class AudioService extends IAudioService.Stub {
 
         mSafeMediaVolumeState = new Integer(Settings.Global.getInt(mContentResolver,
                                                         Settings.Global.AUDIO_SAFE_VOLUME_STATE,
-                                                        SAFE_MEDIA_VOLUME_NOT_CONFIGURED));
+                                                        SAFE_MEDIA_VOLUME_INACTIVE));
         // The default safe volume index read here will be replaced by the actual value when
         // the mcc is read by onConfigureSafeVolume()
         mSafeMediaVolumeIndex = mContext.getResources().getInteger(
