@@ -82,7 +82,7 @@ BootAnimation::BootAnimation() : Thread(false), mZip(NULL), mRotation(0)
     mSession = new SurfaceComposerClient();
 
     char prop[PROPERTY_VALUE_MAX];
-    if (property_get("ro.display.rotation", prop, "0") > 0) {
+    if (property_get("ro.sf.hwrotation", prop, "0") > 0) {
         int value = atoi(prop);
         if( 0 == value || 90 == value || 180 == value || 270 == value ){
             mRotation = value;
