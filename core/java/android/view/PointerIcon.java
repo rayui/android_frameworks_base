@@ -357,6 +357,9 @@ public final class PointerIcon implements Parcelable {
     }
 
     public static Bitmap rotateBitmap(Bitmap source, float angle) {
+        if (angle == 0)
+            return source;
+
         Matrix matrix = new Matrix();
         matrix.postRotate(angle);
         return Bitmap.createBitmap(source, 0, 0, source.getWidth(),
