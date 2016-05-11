@@ -283,7 +283,7 @@ public class UsbDevice implements Parcelable {
             String manufacturerName = in.readString();
             String productName = in.readString();
             String serialNumber = in.readString();
-            Parcelable[] configurations = in.readParcelableArray(UsbInterface.class.getClassLoader());
+            Parcelable[] configurations = in.readParcelableArray(UsbConfiguration.class.getClassLoader());
             UsbDevice device = new UsbDevice(name, vendorId, productId, clasz, subClass, protocol,
                                  manufacturerName, productName, serialNumber);
             device.setConfigurations(configurations);
