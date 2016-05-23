@@ -38,7 +38,6 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import com.android.internal.statusbar.StatusBarIcon;
-import com.android.systemui.BatteryMeterView;
 import com.android.systemui.FontSizeUtils;
 import com.android.systemui.Interpolators;
 import com.android.systemui.R;
@@ -75,8 +74,6 @@ public class StatusBarIconController extends StatusBarIconList implements Tunabl
     private NotificationIconAreaController mNotificationIconAreaController;
     private View mNotificationIconAreaInner;
 
-    private BatteryMeterView mBatteryMeterView;
-    private BatteryMeterView mBatteryMeterViewKeyguard;
     private TextView mClock;
 
     private int mIconSize;
@@ -131,10 +128,6 @@ public class StatusBarIconController extends StatusBarIconList implements Tunabl
 
         mStatusIconsKeyguard = (LinearLayout) keyguardStatusBar.findViewById(R.id.statusIcons);
 
-        mBatteryMeterView = (BatteryMeterView) statusBar.findViewById(R.id.battery);
-        mBatteryMeterViewKeyguard = (BatteryMeterView) keyguardStatusBar.findViewById(R.id.battery);
-        scaleBatteryMeterViews(context);
-
         mClock = (TextView) statusBar.findViewById(R.id.clock);
         mDarkModeIconColorSingleTone = context.getColor(R.color.dark_mode_icon_color_single_tone);
         mLightModeIconColorSingleTone = context.getColor(R.color.light_mode_icon_color_single_tone);
@@ -152,22 +145,6 @@ public class StatusBarIconController extends StatusBarIconList implements Tunabl
      * Looks up the scale factor for status bar icons and scales the battery view by that amount.
      */
     private void scaleBatteryMeterViews(Context context) {
-        Resources res = context.getResources();
-        TypedValue typedValue = new TypedValue();
-
-        res.getValue(R.dimen.status_bar_icon_scale_factor, typedValue, true);
-        float iconScaleFactor = typedValue.getFloat();
-
-        int batteryHeight = res.getDimensionPixelSize(R.dimen.status_bar_battery_icon_height);
-        int batteryWidth = res.getDimensionPixelSize(R.dimen.status_bar_battery_icon_width);
-        int marginBottom = res.getDimensionPixelSize(R.dimen.battery_margin_bottom);
-
-        LinearLayout.LayoutParams scaledLayoutParams = new LinearLayout.LayoutParams(
-                (int) (batteryWidth * iconScaleFactor), (int) (batteryHeight * iconScaleFactor));
-        scaledLayoutParams.setMarginsRelative(0, 0, 0, marginBottom);
-
-        mBatteryMeterView.setLayoutParams(scaledLayoutParams);
-        mBatteryMeterViewKeyguard.setLayoutParams(scaledLayoutParams);
     }
 
     @Override
@@ -524,8 +501,6 @@ public class StatusBarIconController extends StatusBarIconList implements Tunabl
             v.setImageTintList(ColorStateList.valueOf(getTint(mTintArea, v, mIconTint)));
         }
         mSignalCluster.setIconTint(mIconTint, mDarkIntensity, mTintArea);
-        mBatteryMeterView.setDarkIntensity(
-                isInArea(mTintArea, mBatteryMeterView) ? mDarkIntensity : 0);
         mClock.setTextColor(getTint(mTintArea, mClock, mIconTint));
     }
 
@@ -592,7 +567,6 @@ public class StatusBarIconController extends StatusBarIconList implements Tunabl
                     ViewGroup.LayoutParams.WRAP_CONTENT, mIconSize);
             child.setLayoutParams(lp);
         }
-        scaleBatteryMeterViews(mContext);
     }
 
     private void updateClock() {

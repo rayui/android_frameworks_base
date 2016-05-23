@@ -88,9 +88,6 @@ public class BatteryMeterView extends ImageView implements
 
     @Override
     public void onBatteryLevelChanged(int level, boolean pluggedIn, boolean charging) {
-        setContentDescription(
-                getContext().getString(charging ? R.string.accessibility_battery_level_charging
-                        : R.string.accessibility_battery_level, level));
     }
 
     @Override

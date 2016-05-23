@@ -51,7 +51,6 @@ public class CarStatusBar extends PhoneStatusBar implements
     private FullscreenUserSwitcher mFullscreenUserSwitcher;
 
     private CarBatteryController mCarBatteryController;
-    private BatteryMeterView mBatteryMeterView;
 
     @Override
     public void start() {
@@ -72,16 +71,6 @@ public class CarStatusBar extends PhoneStatusBar implements
     @Override
     protected PhoneStatusBarView makeStatusBarView() {
         PhoneStatusBarView statusBarView = super.makeStatusBarView();
-
-        mBatteryMeterView = ((BatteryMeterView) statusBarView.findViewById(R.id.battery));
-
-        // By default, the BatteryMeterView should not be visible. It will be toggled visible
-        // when a device has connected by bluetooth.
-        mBatteryMeterView.setVisibility(View.GONE);
-
-        if (Log.isLoggable(TAG, Log.DEBUG)) {
-            Log.d(TAG, "makeStatusBarView(). mBatteryMeterView: " + mBatteryMeterView);
-        }
 
         return statusBarView;
     }
@@ -125,24 +114,10 @@ public class CarStatusBar extends PhoneStatusBar implements
 
     @Override
     public void showBatteryView() {
-        if (Log.isLoggable(TAG, Log.DEBUG)) {
-            Log.d(TAG, "showBatteryView(). mBatteryMeterView: " + mBatteryMeterView);
-        }
-
-        if (mBatteryMeterView != null) {
-            mBatteryMeterView.setVisibility(View.VISIBLE);
-        }
     }
 
     @Override
     public void hideBatteryView() {
-        if (Log.isLoggable(TAG, Log.DEBUG)) {
-            Log.d(TAG, "hideBatteryView(). mBatteryMeterView: " + mBatteryMeterView);
-        }
-
-        if (mBatteryMeterView != null) {
-            mBatteryMeterView.setVisibility(View.GONE);
-        }
     }
 
     private BroadcastReceiver mPackageChangeReceiver = new BroadcastReceiver() {
