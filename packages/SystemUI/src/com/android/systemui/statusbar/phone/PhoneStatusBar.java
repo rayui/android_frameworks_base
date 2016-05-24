@@ -2879,9 +2879,6 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
         if (modeChange || command.equals(COMMAND_CLOCK)) {
             dispatchDemoCommandToView(command, args, R.id.clock);
         }
-        if (modeChange || command.equals(COMMAND_BATTERY)) {
-            dispatchDemoCommandToView(command, args, R.id.battery);
-        }
         if (modeChange || command.equals(COMMAND_STATUS)) {
             if (mDemoStatusIcons == null) {
                 mDemoStatusIcons = new DemoStatusIcons(mStatusIcons, mIconSize);
