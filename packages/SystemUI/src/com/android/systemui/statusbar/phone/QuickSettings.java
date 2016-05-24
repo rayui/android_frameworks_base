@@ -534,7 +534,6 @@ class QuickSettings {
                         mContext.getString(R.string.accessibility_quick_settings_battery, t));
             }
         });
-        parent.addView(batteryTile);
 
         // Airplane Mode
         final QuickSettingsBasicTile airplaneTile
