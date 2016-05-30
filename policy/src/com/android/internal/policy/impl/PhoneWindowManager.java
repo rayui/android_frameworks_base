@@ -667,7 +667,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         mPowerKeyHandled = handled;
         if (!handled) {
             mHandler.postDelayed(mPowerLongPress, ViewConfiguration.getGlobalActionKeyTimeout());
-            mHandler.postDelayed(mPowerLongLongPress, ViewConfiguration.getGlobalActionKeyTimeout() * 5);
+            mHandler.postDelayed(mPowerLongLongPress, ViewConfiguration.getGlobalActionKeyTimeout() * 10);
         }
     }
 
