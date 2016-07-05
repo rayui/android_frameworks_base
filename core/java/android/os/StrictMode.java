@@ -965,10 +965,11 @@ public final class StrictMode {
         if (!IS_USER_BUILD) {
             threadPolicyMask |= StrictMode.PENALTY_DROPBOX;
         }
+/* Deprecated for ODROID
         if (doFlashes) {
             threadPolicyMask |= StrictMode.PENALTY_FLASH;
         }
-
+*/
         StrictMode.setThreadPolicyMask(threadPolicyMask);
 
         // VM Policy controls CloseGuard, detection of Activity leaks,
