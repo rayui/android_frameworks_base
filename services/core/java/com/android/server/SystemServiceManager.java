@@ -121,21 +121,18 @@ public class SystemServiceManager {
      * @param phase The boot phase to start.
      */
     public void startBootPhase(final int phase) {
-        if (phase <= mCurrentPhase && phase != SystemService.PHASE_INSTABOOT_RESTORED && phase != SystemService.PHASE_INSTABOOT_FIRST_DISPLAYED) {
+        if (phase <= mCurrentPhase) {
             throw new IllegalArgumentException("Next phase must be larger than previous");
         }
-        if (phase != SystemService.PHASE_INSTABOOT_RESTORED && phase != SystemService.PHASE_INSTABOOT_FIRST_DISPLAYED) {
-            mCurrentPhase = phase;
-            Slog.i(TAG, "Starting phase " + mCurrentPhase);
-        } else {
-            Slog.i(TAG, "Starting instaboot phase " + phase);
-        }
+        mCurrentPhase = phase;
+
+        Slog.i(TAG, "Starting phase " + mCurrentPhase);
 
         final int serviceLen = mServices.size();
         for (int i = 0; i < serviceLen; i++) {
             final SystemService service = mServices.get(i);
             try {
-                service.onBootPhase(phase);
+                service.onBootPhase(mCurrentPhase);
             } catch (Exception ex) {
                 throw new RuntimeException("Failed to boot service "
                         + service.getClass().getName()

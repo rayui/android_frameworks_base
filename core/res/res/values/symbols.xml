@@ -545,7 +545,6 @@
   <java-symbol type="string" name="config_mms_user_agent" />
   <java-symbol type="string" name="config_mms_user_agent_profile_url" />
   <java-symbol type="string" name="config_ntpServer" />
-  <java-symbol type="array"  name="config_ntpServer_list" />
   <java-symbol type="string" name="config_useragentprofile_url" />
   <java-symbol type="string" name="config_wifi_p2p_device_type" />
   <java-symbol type="string" name="contentServiceSync" />
@@ -1516,8 +1515,6 @@
   <java-symbol type="string" name="system_ui_date_pattern" />
   <java-symbol type="string" name="android_start_title" />
   <java-symbol type="string" name="android_upgrading_title" />
-  <java-symbol type="string" name="android_optimizing_title" />
-  <java-symbol type="string" name="android_optimizing_content" />
   <java-symbol type="string" name="bugreport_title" />
   <java-symbol type="string" name="bugreport_message" />
   <java-symbol type="string" name="bugreport_status" />

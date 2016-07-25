@@ -212,13 +212,6 @@ public class AppOpsService extends IAppOpsService.Stub {
         ServiceManager.addService(Context.APP_OPS_SERVICE, asBinder());
     }
 
-    public void reload() {
-        synchronized (this) {
-            mUidOps.clear();
-            readState();
-        }
-    }
-
     public void systemReady() {
         synchronized (this) {
             boolean changed = false;

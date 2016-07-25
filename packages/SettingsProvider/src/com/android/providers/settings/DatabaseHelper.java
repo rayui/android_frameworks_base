@@ -2643,10 +2643,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             loadBooleanSetting(stmt, Settings.Global.GUEST_USER_ENABLED,
                     R.bool.def_guest_user_enabled);
             loadSetting(stmt, Settings.Global.ENHANCED_4G_MODE_ENABLED, ImsConfig.FeatureValueConstants.ON);
-            loadFractionSetting(stmt, Settings.Global.WINDOW_ANIMATION_SCALE,
-                    R.fraction.def_window_animation_scale, 1);
-            loadFractionSetting(stmt, Settings.Global.TRANSITION_ANIMATION_SCALE,
-                    R.fraction.def_window_transition_scale, 1);
             // --- New global settings start here
         } finally {
             if (stmt != null) stmt.close();

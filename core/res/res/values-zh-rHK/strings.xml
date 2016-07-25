@@ -1635,8 +1635,6 @@
     <string name="share_action_provider_share_with" msgid="5247684435979149216">"分享活動"</string>
     <string name="list_delimeter" msgid="3975117572185494152">"、 "</string>
     <string name="sending" msgid="3245653681008218030">"正在傳送..."</string>
-    <string name="android_optimizing_title" msgid="2057951947297614723">"正在優化系統"</string>
-    <string name="android_optimizing_content" msgid="2057951947297614724">"系統即將重啟並優化,可能需要幾分鐘，請等待."</string>
     <string name="launchBrowserDefault" msgid="2057951947297614725">"要啟動「瀏覽器」嗎？"</string>
     <string name="SetupCallDefault" msgid="5834948469253758575">"接聽電話嗎？"</string>
     <string name="activity_resolver_use_always" msgid="8017770747801494933">"一律採用"</string>

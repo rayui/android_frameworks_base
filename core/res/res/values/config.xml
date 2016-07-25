@@ -1349,10 +1349,6 @@
 
     <!-- Remote server that can provide NTP responses. -->
     <string translatable="false" name="config_ntpServer">2.android.pool.ntp.org</string>
-    <!-- Remote server that can provide NTP responses. -->
-    <string-array translatable="false" name="config_ntpServer_list">
-        <item>2.android.pool.ntp.org</item>
-    </string-array>
     <!-- Normal polling frequency in milliseconds -->
     <integer name="config_ntpPollingInterval">864000000</integer>
     <!-- Try-again polling interval in milliseconds, in case the network request failed -->

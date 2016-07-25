@@ -83,23 +83,6 @@ public final class MessageQueue {
         if (handler == null) {
             throw new NullPointerException("Can't add a null IdleHandler");
         }
-
-        if ("com.android.cts.usespermissiondiffcertapp".equals(android.app.ActivityThread.currentPackageName())) {
-            StackTraceElement[] callStack = Thread.currentThread().getStackTrace();
-            for (int i = 0; i < callStack.length; i++) {
-                StackTraceElement el = callStack[i];
-                String TARGET_CLASS = "com.android.cts.usespermissiondiffcertapp.ReceiveUriActivity";
-                String TARGET_METHOD = "onDestroy";
-                if (TARGET_CLASS.equals(el.getClassName()) &&
-                    TARGET_METHOD.equals(el.getMethodName())) {
-                    //Log.i("MessageQueue", "addIdleHandler target cts case");
-
-                    handler.queueIdle();
-                    return;
-                }
-            }
-        }
-
         synchronized (this) {
             mIdleHandlers.add(handler);
         }

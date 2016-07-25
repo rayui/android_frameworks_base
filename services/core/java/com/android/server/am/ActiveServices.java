@@ -79,9 +79,6 @@ public final class ActiveServices {
     // How long we wait for a service to finish executing.
     static final int SERVICE_TIMEOUT = 20*1000;
 
-    // SERVICE_TIMEOUT for instaboot
-    static final int SERVICE_TIMEOUT_INSTABOOT = 40*1000;
-
     // How long we wait for a service to finish executing.
     static final int SERVICE_BACKGROUND_TIMEOUT = SERVICE_TIMEOUT * 10;
 

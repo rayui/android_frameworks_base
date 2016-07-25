@@ -59,7 +59,6 @@ import android.util.Log;
 import android.util.LruCache;
 import android.util.Slog;
 import android.util.SparseArray;
-import android.os.SystemClock;
 
 public class SettingsProvider extends ContentProvider {
     private static final String TAG = "SettingsProvider";
@@ -108,8 +107,6 @@ public class SettingsProvider extends ContentProvider {
     // want to cache the existence of a key, but not store its value.
     private static final Bundle TOO_LARGE_TO_CACHE_MARKER = Bundle.forPair("_dummy", null);
 
-    private boolean mDatabaseLockable = true;
-
     private UserManager mUserManager;
     private BackupManager mBackupManager;
 
@@ -126,8 +123,6 @@ public class SettingsProvider extends ContentProvider {
 
     static final HashSet<String> sSecureCloneToManagedKeys;
     static final HashSet<String> sSystemCloneToManagedKeys;
-
-    private boolean mDisableInstaboot = true;
 
     static {
         // Keys (name column) from the 'secure' table that are now in the owner user's 'global'
@@ -368,52 +363,9 @@ public class SettingsProvider extends ContentProvider {
                 // during an sqlite write)
                 return;
             }
-            synchronized (mCachePrefetchLock) {
-                if (!mShutdown) {
-                    Log.d(TAG, "User " + mUserHandle + " updating our caches for " + mPath);
-                    fullyPopulateCaches(mUserHandle);
-                }
-            }
+            Log.d(TAG, "User " + mUserHandle + " updating our caches for " + mPath);
+            fullyPopulateCaches(mUserHandle);
             mIsDirty.set(false);
-        }
-    }
-
-    @Override
-    public void shutdown() {
-        Slog.i(TAG, "shutdown provider:" + this);
-        synchronized (mCachePrefetchLock) {
-            mShutdown = true;
-        }
-
-        for (int i = 0; i < sObserverInstances.size(); i++) {
-            FileObserver observer = sObserverInstances.get(i);
-            if (observer != null) {
-                observer.stopWatching();
-                sObserverInstances.delete(i);
-            }
-        }
-
-        for (int i = 0; i < mOpenHelpers.size(); i++) {
-            DatabaseHelper dbhelper = mOpenHelpers.get(i);
-            dbhelper.close();
-            mOpenHelpers.delete(i);
-        }
-
-        for (int i = 0; i < sSystemCaches.size(); i++) {
-            sSystemCaches.delete(i);
-        }
-
-        for (int i = 0; i < sSecureCaches.size(); i++) {
-            sSecureCaches.delete(i);
-        }
-
-        synchronized (sGlobalCache) {
-            sGlobalCache.evictAll();
-            sGlobalCache.mCacheFullyMatchesDisk = false;
-        }
-
-        for (int i = 0; i < sKnownMutationsInFlight.size(); i++) {
-            sKnownMutationsInFlight.delete(i);
         }
     }
 
@@ -421,7 +373,6 @@ public class SettingsProvider extends ContentProvider {
     public boolean onCreate() {
         mBackupManager = new BackupManager(getContext());
         mUserManager = UserManager.get(getContext());
-        mDisableInstaboot = SystemProperties.getBoolean("config.disable_instaboot", true);
 
         setAppOps(AppOpsManager.OP_NONE, AppOpsManager.OP_WRITE_SETTINGS);
         establishDbTracking(UserHandle.USER_OWNER);
@@ -497,10 +448,6 @@ public class SettingsProvider extends ContentProvider {
 
         DatabaseHelper dbhelper;
 
-        while (!mDatabaseLockable) {
-            Slog.i(TAG, "establishDbTracking waiting");
-            SystemClock.sleep(200);
-        }
         synchronized (this) {
             dbhelper = mOpenHelpers.get(userHandle);
             if (dbhelper == null) {
@@ -547,15 +494,9 @@ public class SettingsProvider extends ContentProvider {
 
         @Override
         public void run() {
-            synchronized (mCachePrefetchLock){
-                if (!mShutdown)
-                    fullyPopulateCaches(mUserHandle);
-            }
+            fullyPopulateCaches(mUserHandle);
         }
     }
-
-    private Object mCachePrefetchLock = new Object();
-    private boolean mShutdown = false;
 
     private void startAsyncCachePopulation(int userHandle) {
         new CachePrefetchThread(userHandle).start();
@@ -742,51 +683,6 @@ public class SettingsProvider extends ContentProvider {
     @Override
     public Bundle call(String method, String request, Bundle args) {
         int callingUser = UserHandle.getCallingUserId();
-
-        if (!mDisableInstaboot) {
-            if ("SETTINGS_stop".equals(method)) {
-                synchronized (this) {
-                    mDatabaseLockable = false;
-                    SystemClock.sleep(100);
-
-                    for (int i = 0; i < sObserverInstances.size(); i++) {
-                        FileObserver observer = sObserverInstances.get(i);
-                        if (observer != null) {
-                            observer.stopWatching();
-                            sObserverInstances.delete(i);
-                        }
-                    }
-
-                    for (int i = 0; i < mOpenHelpers.size(); i++) {
-                        DatabaseHelper dbhelper = mOpenHelpers.get(i);
-                        dbhelper.close();
-                        mOpenHelpers.delete(i);
-                    }
-
-                    for (int i = 0; i < sSystemCaches.size(); i++) {
-                        sSystemCaches.delete(i);
-                    }
-
-                    for (int i = 0; i < sSecureCaches.size(); i++) {
-                        sSecureCaches.delete(i);
-                    }
-
-                    synchronized (sGlobalCache) {
-                        sGlobalCache.evictAll();
-                        sGlobalCache.mCacheFullyMatchesDisk = false;
-                    }
-
-                    for (int i = 0; i < sKnownMutationsInFlight.size(); i++) {
-                        sKnownMutationsInFlight.delete(i);
-                    }
-                }
-            } else if ("SETTINGS_refresh".equals(method)) {
-                mDatabaseLockable = true;
-                getOrEstablishDatabase(callingUser);
-                startAsyncCachePopulation(callingUser);
-            }
-        }
-
         if (args != null) {
             int reqUser = args.getInt(Settings.CALL_METHOD_USER_KEY, callingUser);
             if (reqUser != callingUser) {

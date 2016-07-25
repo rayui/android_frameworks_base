@@ -19,12 +19,7 @@ package android.os;
 import android.util.Log;
 
 import java.lang.ref.WeakReference;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.Vector;
-import java.util.Iterator;
 
 /**
  * Monitors files (using <a href="http://en.wikipedia.org/wiki/Inotify">inotify</a>)
@@ -69,41 +64,17 @@ public abstract class FileObserver {
     public static final int DELETE_SELF = 0x00000400;
     /** Event type: The monitored file or directory was moved; monitoring continues */
     public static final int MOVE_SELF = 0x00000800;
-    /**
-     * @hide
-    */
-    public static final int INSTABOOT = 0x00001000;
+
     /** Event mask: All valid event types, combined */
     public static final int ALL_EVENTS = ACCESS | MODIFY | ATTRIB | CLOSE_WRITE
             | CLOSE_NOWRITE | OPEN | MOVED_FROM | MOVED_TO | DELETE | CREATE
             | DELETE_SELF | MOVE_SELF;
-    /**
-     * @hide
-    */
-    public static final String FILE_OBSERSER_HOLDON = "$holdon$data";
+
     private static final String LOG_TAG = "FileObserver";
 
     private static class ObserverThread extends Thread {
         private HashMap<Integer, WeakReference> m_observers = new HashMap<Integer, WeakReference>();
         private int m_fd;
-        private boolean m_holdonData = false;
-        WeakReference m_holdObserver = null;
-        private static final int HOLDON_ID = 0x7eadbeef;
-        private static class HoldonObject {
-            int mId;
-            String mPath;
-            int mMask;
-            WeakReference mObserver;
-            int mFd = -1;
-            public HoldonObject (int id, String path, int mask, WeakReference observer) {
-                mId = id;
-                mPath = path;
-                mMask = mask;
-                mObserver = observer;
-            }
-        }
-        private Vector<HoldonObject> m_holdobservers = new Vector<HoldonObject>();
-        private int m_curFakeId = 0x7ffff000;
 
         public ObserverThread() {
             super("FileObserver");
@@ -115,21 +86,6 @@ public abstract class FileObserver {
         }
 
         public int startWatching(String path, int mask, FileObserver observer) {
-
-            if (FILE_OBSERSER_HOLDON.equals(path)) {
-                if (m_holdonData) return -1;
-                m_holdonData = true;
-                m_holdObserver = new WeakReference(observer);
-                return HOLDON_ID;
-            }
-            if (m_holdonData && path.startsWith("/data")) {
-                synchronized (m_holdobservers) {
-                   m_curFakeId++;
-                   m_holdobservers.add(new HoldonObject(m_curFakeId, path, mask, new WeakReference(observer)));
-                }
-                return m_curFakeId;
-            }
-
             int wfd = startWatching(m_fd, path, mask);
 
             Integer i = new Integer(wfd);
@@ -142,41 +98,7 @@ public abstract class FileObserver {
             return i;
         }
 
-        public void stopWatching(int descriptor, String path) {
-            if (descriptor == HOLDON_ID && FILE_OBSERSER_HOLDON.equals(path)) {
-                m_holdonData = false;
-                m_holdObserver = null;
-                synchronized (m_holdobservers) {
-                    Iterator<HoldonObject> it;
-                    for (it = m_holdobservers.iterator(); it.hasNext();) {
-                        HoldonObject object = (HoldonObject)it.next();
-                        int wfd = startWatching(m_fd, object.mPath, object.mMask);
-                        Integer i = new Integer(wfd);
-                        object.mFd = wfd;
-                        if (wfd >= 0) {
-                            synchronized (m_observers) {
-                                m_observers.put(i, object.mObserver);
-                            }
-                        }
-                    }
-                }
-                return;
-            }
-            if (path.startsWith("/data")) {
-                synchronized (m_holdobservers) {
-                    Iterator<HoldonObject> it;
-                    for (it = m_holdobservers.iterator(); it.hasNext();) {
-                        HoldonObject object = (HoldonObject)it.next();
-                        if (object.mId == descriptor) {
-                            if (object.mFd > 0)
-                                stopWatching(m_fd, object.mFd);
-                            m_holdobservers.remove(it);
-                            return;
-                        }
-                    }
-                }
-            }
-
+        public void stopWatching(int descriptor) {
             stopWatching(m_fd, descriptor);
         }
 
@@ -265,7 +187,7 @@ public abstract class FileObserver {
      */
     public void stopWatching() {
         if (m_descriptor >= 0) {
-            s_observerThread.stopWatching(m_descriptor, m_path);
+            s_observerThread.stopWatching(m_descriptor);
             m_descriptor = -1;
         }
     }

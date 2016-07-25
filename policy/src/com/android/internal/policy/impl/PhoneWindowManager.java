@@ -110,12 +110,10 @@ import com.android.internal.statusbar.IStatusBarService;
 import com.android.internal.widget.PointerLocationView;
 import com.android.server.LocalServices;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
@@ -184,9 +182,6 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     static public final String SYSTEM_DIALOG_REASON_RECENT_APPS = "recentapps";
     static public final String SYSTEM_DIALOG_REASON_HOME_KEY = "homekey";
     static public final String SYSTEM_DIALOG_REASON_ASSIST = "assist";
-
-    static public final String ALLOW_APP_BACKGROUND_PATH = "/system/etc/allowbackgroundapp.list";
-    static private ArrayList<String> mBackAppList = new ArrayList<String>();
 
     /**
      * These are the system UI flags that, when changing, can cause the layout
@@ -337,7 +332,6 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     boolean mSystemReady;
     boolean mSystemBooted;
     boolean mHdmiPlugged;
-    final Object mHdmiHwPluggedLock = new Object();
     IUiModeManager mUiModeManager;
     int mUiMode;
     int mDockMode = Intent.EXTRA_DOCK_STATE_UNDOCKED;
@@ -1350,16 +1344,10 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         // Controls rotation and the like.
         initializeHdmiState();
 
-        filter = new IntentFilter();
-        filter.addAction("com.droidlogic.instaboot.RESTORE_COMPLETED");
-        context.registerReceiver(mInstabootReceiver, filter);
-
         // Match current screen state.
         if (!mPowerManager.isInteractive()) {
             goingToSleep(WindowManagerPolicy.OFF_BECAUSE_OF_USER);
         }
-
-        initAllowpackageBackground();
     }
 
     /**
@@ -4436,19 +4424,13 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     }
 
     void setHdmiPlugged(boolean plugged) {
-        String instabootstatus = SystemProperties.get("instaboot.status", "completed");
-        if (instabootstatus.equals("booting")) {
-            return;
-        }
-        synchronized(mHdmiHwPluggedLock){
-            if (mHdmiPlugged != plugged) {
-                mHdmiPlugged = plugged;
-                updateRotation(true, true);
-                Intent intent = new Intent(ACTION_HDMI_PLUGGED);
-                intent.addFlags(Intent.FLAG_RECEIVER_REGISTERED_ONLY_BEFORE_BOOT);
-                intent.putExtra(EXTRA_HDMI_PLUGGED_STATE, plugged);
-                mContext.sendStickyBroadcastAsUser(intent, UserHandle.ALL);
-            }
+        if (mHdmiPlugged != plugged) {
+            mHdmiPlugged = plugged;
+            updateRotation(true, true);
+            Intent intent = new Intent(ACTION_HDMI_PLUGGED);
+            intent.addFlags(Intent.FLAG_RECEIVER_REGISTERED_ONLY_BEFORE_BOOT);
+            intent.putExtra(EXTRA_HDMI_PLUGGED_STATE, plugged);
+            mContext.sendStickyBroadcastAsUser(intent, UserHandle.ALL);
         }
     }
 
@@ -5047,43 +5029,6 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                 synchronized (mWindowManagerFuncs.getWindowManagerLock()) {
                     mLastSystemUiFlags = 0;
                     updateSystemUiVisibilityLw();
-                }
-            }
-        }
-    };
-
-    private BroadcastReceiver mInstabootReceiver = new BroadcastReceiver(){
-        @Override
-        public void onReceive(Context context, Intent intent) {
-
-            final String action = intent.getAction();
-            if ("com.droidlogic.instaboot.RESTORE_COMPLETED".equals(action)) {
-                Log.i(TAG,"restore system completed");
-                synchronized(mHdmiHwPluggedLock){
-                    boolean plugged = false;
-                    final String filename = "/sys/class/switch/hdmi/state";
-                    FileReader reader = null;
-                    try {
-                        reader = new FileReader(filename);
-                        char[] buf = new char[15];
-                        int n = reader.read(buf);
-                        if (n > 1) {
-                            plugged = 0 != Integer.parseInt(new String(buf, 0, n-1));
-                        }
-                    } catch (IOException ex) {
-                        Slog.w(TAG, "Couldn't read hdmi state from " + filename + ": " + ex);
-                    } catch (NumberFormatException ex) {
-                        Slog.w(TAG, "Couldn't read hdmi state from " + filename + ": " + ex);
-                    } finally {
-                        if (reader != null) {
-                            try {
-                                reader.close();
-                            } catch (IOException ex) {
-                            }
-                        }
-                    }
-                    mHdmiPlugged = plugged;
-                    Log.i(TAG,"restore hdmi status as "+mHdmiPlugged);
                 }
             }
         }
@@ -5967,74 +5912,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             }
         }
 
-        final ActivityManager am = (ActivityManager) mContext.getSystemService(Context.ACTIVITY_SERVICE);
-        ComponentName cn = am.getRunningTasks (1).get (0).topActivity;
-        final String packageName = cn.getPackageName();
-
         startActivityAsUser(mHomeIntent, UserHandle.CURRENT);
-
-        if (SystemProperties.getBoolean("ro.platform.has.mbxuimode", false)
-            && !checkAllowPackageBackground(packageName)
-            && !getLauncherPackageName().contains(packageName)) {
-            Handler killPackageHandler = new Handler(mContext.getMainLooper());
-            killPackageHandler.postDelayed(new Runnable() {
-                public void run() {
-                    am.forceStopPackage(packageName);
-               }
-            }, 500);
-        }
-    }
-
-    private void initAllowpackageBackground() {
-        String str = null;
-        mBackAppList.clear();
-        try {
-            File fl = new File(ALLOW_APP_BACKGROUND_PATH);
-            if (!fl.exists()) {
-                mBackAppList.add("all");
-                return;
-            }
-            FileReader fr = new FileReader(ALLOW_APP_BACKGROUND_PATH);
-            BufferedReader br = new BufferedReader(fr);
-            while ((str = br.readLine()) != null) {
-                if (str.equals("all")) {
-                    mBackAppList.clear();
-                    mBackAppList.add("all");
-                    break;
-                } else {
-                    mBackAppList.add(str);
-                }
-            };
-            br.close();
-            fr.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public boolean checkAllowPackageBackground(String pack) {
-        if (mBackAppList.contains("all") || mBackAppList.contains(pack)) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    public String getLauncherPackageName() {
-        String packageNames = null;
-        final Intent intent = new Intent(Intent.ACTION_MAIN);
-        intent.addCategory(Intent.CATEGORY_HOME);
-
-        List<ResolveInfo> resolveInfo = mContext.getPackageManager().queryIntentActivities(intent,
-                PackageManager.MATCH_DEFAULT_ONLY);
-        for (ResolveInfo ri : resolveInfo) {
-            packageNames = packageNames + ri.activityInfo.packageName + ",";
-        }
-        if (packageNames == null || packageNames.length() == 0) {
-            return null;
-        } else {
-            return packageNames;
-        }
     }
 
     /**

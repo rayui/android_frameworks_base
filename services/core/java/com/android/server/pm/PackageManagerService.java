@@ -494,199 +494,6 @@ public class PackageManagerService extends IPackageManager.Stub {
 
     boolean mResolverReplaced = false;
 
-    @Override
-    public boolean rescanPackages(int mode){
-        final List<String> possiblyDeletedUpdatedSystemApps = new ArrayList<String>();
-        final ArrayMap<String, File> expectingBetter = new ArrayMap<>();
-        final File privilegedAppDir = new File(Environment.getRootDirectory(), "priv-app");
-        final File systemAppDir = new File(Environment.getRootDirectory(), "app");
-        File vendorAppDir = new File("/vendor/app");
-        final File oemAppDir = new File(Environment.getOemDirectory(), "app");
-
-        synchronized (mInstallLock) {
-        synchronized (mPackages) {
-            mSettings.readLPw(this, sUserManager.getUsers(false),
-                    mSdkVersion, mOnlyCore);
-            // Prune any system packages that no longer exist.
-            //final List<String> possiblyDeletedUpdatedSystemApps = new ArrayList<String>();
-            if (!mOnlyCore) {
-                Iterator<PackageSetting> psit = mSettings.mPackages.values().iterator();
-                while (psit.hasNext()) {
-                    PackageSetting ps = psit.next();
-
-                    /*
-                     * If this is not a system app, it can't be a
-                     * disable system app.
-                     */
-                    if ((ps.pkgFlags & ApplicationInfo.FLAG_SYSTEM) == 0) {
-                        continue;
-                    }
-
-                    /*
-                     * If the package is scanned, it's not erased.
-                     */
-                    final PackageParser.Package scannedPkg = mPackages.get(ps.name);
-                    if (scannedPkg != null) {
-                        /*
-                         * If the system app is both scanned and in the
-                         * disabled packages list, then it must have been
-                         * added via OTA. Remove it from the currently
-                         * scanned package so the previously user-installed
-                         * application can be scanned.
-                         */
-                        if (mSettings.isDisabledSystemPackageLPr(ps.name)) {
-                            logCriticalInfo(Log.WARN, "Expecting better updated system app for "
-                                    + ps.name + "; removing system app.  Last known codePath="
-                                    + ps.codePathString + ", installStatus=" + ps.installStatus
-                                    + ", versionCode=" + ps.versionCode + "; scanned versionCode="
-                                    + scannedPkg.mVersionCode);
-                            removePackageLI(ps, true);
-                            expectingBetter.put(ps.name, ps.codePath);
-                        }
-                        continue;
-                    }
-
-                    if (!mSettings.isDisabledSystemPackageLPr(ps.name)) {
-                        psit.remove();
-                        logCriticalInfo(Log.WARN, "System package " + ps.name
-                                + " no longer exists; wiping its data");
-                        removeDataDirsLI(ps.name);
-                    } else {
-                        final PackageSetting disabledPs = mSettings.getDisabledSystemPkgLPr(ps.name);
-                        if (disabledPs.codePath == null || !disabledPs.codePath.exists()) {
-                            possiblyDeletedUpdatedSystemApps.add(ps.name);
-                        }
-                    }
-                }
-            }
-
-            //look for any incomplete package installations
-            ArrayList<PackageSetting> deletePkgsList = mSettings.getListOfIncompleteInstallPackagesLPr();
-            //clean up list
-            for (int i = 0; i < deletePkgsList.size(); i++) {
-                //clean up here
-                cleanupInstallFailedPackage(deletePkgsList.get(i));
-            }
-            //delete tmp files
-            deleteTempPackageFiles();
-
-            // Remove any shared userIDs that have no associated packages
-            mSettings.pruneSharedUsersLPw();
-        }}
-        synchronized (mInstallLock) {
-            if (!mOnlyCore) {
-                // Set flag to monitor and not change apk file paths when
-                // scanning install directories.
-                final int scanFlags = SCAN_NO_PATHS | SCAN_DEFER_DEX | SCAN_BOOTING;
-                scanDirLI(mAppInstallDir, 0, scanFlags | SCAN_REQUIRE_KNOWN, 0);
-
-                scanDirLI(mDrmAppPrivateInstallDir, PackageParser.PARSE_FORWARD_LOCK,
-                        scanFlags | SCAN_REQUIRE_KNOWN, 0);
-
-                /**
-                 * Remove disable package settings for any updated system
-                 * apps that were removed via an OTA. If they're not a
-                 * previously-updated app, remove them completely.
-                 * Otherwise, just revoke their system-level permissions.
-                 */
-                for (String deletedAppName : possiblyDeletedUpdatedSystemApps) {
-                    PackageParser.Package deletedPkg = mPackages.get(deletedAppName);
-                    mSettings.removeDisabledSystemPackageLPw(deletedAppName);
-
-                    String msg;
-                    if (deletedPkg == null) {
-                        msg = "Updated system package " + deletedAppName
-                                + " no longer exists; wiping its data";
-                        removeDataDirsLI(deletedAppName);
-                    } else {
-                        msg = "Updated system app + " + deletedAppName
-                                + " no longer present; removing system privileges for "
-                                + deletedAppName;
-
-                        deletedPkg.applicationInfo.flags &= ~ApplicationInfo.FLAG_SYSTEM;
-
-                        PackageSetting deletedPs = mSettings.mPackages.get(deletedAppName);
-                        deletedPs.pkgFlags &= ~ApplicationInfo.FLAG_SYSTEM;
-                    }
-                    logCriticalInfo(Log.WARN, msg);
-                }
-                /**
-                 * Make sure all system apps that we expected to appear on
-                 * the userdata partition actually showed up. If they never
-                 * appeared, crawl back and revive the system version.
-                 */
-                for (int i = 0; i < expectingBetter.size(); i++) {
-                    final String packageName = expectingBetter.keyAt(i);
-                    if (!mPackages.containsKey(packageName)) {
-                        final File scanFile = expectingBetter.valueAt(i);
-
-                        logCriticalInfo(Log.WARN, "Expected better " + packageName
-                                + " but never showed up; reverting to system");
-
-                        final int reparseFlags;
-                        if (FileUtils.contains(privilegedAppDir, scanFile)) {
-                            reparseFlags = PackageParser.PARSE_IS_SYSTEM
-                                    | PackageParser.PARSE_IS_SYSTEM_DIR
-                                    | PackageParser.PARSE_IS_PRIVILEGED;
-                        } else if (FileUtils.contains(systemAppDir, scanFile)) {
-                            reparseFlags = PackageParser.PARSE_IS_SYSTEM
-                                    | PackageParser.PARSE_IS_SYSTEM_DIR;
-                        } else if (FileUtils.contains(vendorAppDir, scanFile)) {
-                            reparseFlags = PackageParser.PARSE_IS_SYSTEM
-                                    | PackageParser.PARSE_IS_SYSTEM_DIR;
-                        } else if (FileUtils.contains(oemAppDir, scanFile)) {
-                            reparseFlags = PackageParser.PARSE_IS_SYSTEM
-                                    | PackageParser.PARSE_IS_SYSTEM_DIR;
-                        } else {
-                            Slog.e(TAG, "Ignoring unexpected fallback path " + scanFile);
-                            continue;
-                        }
-
-                        mSettings.enableSystemPackageLPw(packageName);
-
-                        try {
-                            scanPackageLI(scanFile, reparseFlags, scanFlags, 0, null);
-                        } catch (PackageManagerException e) {
-                            Slog.e(TAG, "Failed to parse original system package: "
-                                    + e.getMessage());
-                        }
-                    }
-                }
-            }
-            // Now that we know all of the shared libraries, update all clients to have
-            // the correct library paths.
-            updateAllSharedLibrariesLPw();
-
-            for (SharedUserSetting setting : mSettings.getAllSharedUsersLPw()) {
-                // NOTE: We ignore potential failures here during a system scan (like
-                // the rest of the commands above) because there's precious little we
-                // can do about it. A settings error is reported, though.
-                adjustCpuAbisForSharedUserLPw(setting.packages, null /* scanned package */,
-                        false /* force dexopt */, false /* defer dexopt */);
-            }
-
-            // Now that we know all the packages we are keeping,
-            // read and update their last usage times.
-            mPackageUsage.readLP();
-
-            updatePermissionsLPw(null, null, UPDATE_PERMISSIONS_ALL);
-            synchronized (mPackages) {
-                for (PackageParser.Package pkg : mPackages.values()) {
-                    mSettings.setPackageStoppedStateLPw(pkg.packageName, false, true,
-                       0, 0);
-                }
-            }
-
-            // Now after opening every single application zip, make sure they
-            // are all flushed.  Not really needed, but keeps things nice and
-            // tidy.
-            Runtime.getRuntime().gc();
-
-            //mRequiredVerifierPackage = getRequiredVerifierLPr();
-        } // synchronized (mInstallLock)
-        return true;
-    }
-
     // Set of pending broadcasts for aggregating enable/disable of components.
     static class PendingPackageBroadcasts {
         // for each user id, a map of <package name -> components within that package>
@@ -1517,8 +1324,6 @@ public class PackageManagerService extends IPackageManager.Stub {
         mSettings.addSharedUserLPw("android.uid.bluetooth", BLUETOOTH_UID,
                 ApplicationInfo.FLAG_SYSTEM|ApplicationInfo.FLAG_PRIVILEGED);
         mSettings.addSharedUserLPw("android.uid.shell", SHELL_UID,
-                ApplicationInfo.FLAG_SYSTEM|ApplicationInfo.FLAG_PRIVILEGED);
-        mSettings.addSharedUserLPw("android.uid.media", Process.MEDIA_UID,
                 ApplicationInfo.FLAG_SYSTEM|ApplicationInfo.FLAG_PRIVILEGED);
 
         // TODO: add a property to control this?
@@ -2605,13 +2410,11 @@ public class PackageManagerService extends IPackageManager.Stub {
                 if (gp.grantedPermissions.contains(permName)) {
                     return PackageManager.PERMISSION_GRANTED;
                 }
-            }
-
-            //make sure platform.xml alway is useful
-            //should check system permission even if not granted by UserId,
-            ArraySet<String> perms = mSystemPermissions.get(uid);
-            if (perms != null && perms.contains(permName)) {
-                return PackageManager.PERMISSION_GRANTED;
+            } else {
+                ArraySet<String> perms = mSystemPermissions.get(uid);
+                if (perms != null && perms.contains(permName)) {
+                    return PackageManager.PERMISSION_GRANTED;
+                }
             }
         }
         return PackageManager.PERMISSION_DENIED;

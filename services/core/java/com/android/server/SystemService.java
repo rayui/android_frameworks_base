@@ -72,10 +72,6 @@ public abstract class SystemService {
      */
     public static final int PHASE_THIRD_PARTY_APPS_CAN_START = 600;
 
-    public static final int PHASE_INSTABOOT_RESTORED = 700;
-    public static final int PHASE_INSTABOOT_FIRST_DISPLAYED = 710;
-
-
     /**
      * After receiving this boot phase, services can allow user interaction with the device.
      * This phase occurs when boot has completed and the home application has started.

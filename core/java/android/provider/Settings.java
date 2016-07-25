@@ -1102,11 +1102,6 @@ public final class Settings {
         public String getStringForUser(ContentResolver cr, String name, final int userHandle) {
             final boolean isSelf = (userHandle == UserHandle.myUserId());
             if (isSelf) {
-                if (name.equals("SETTINGS_stop")) {
-                    mValues.clear();
-                    Log.v(TAG, "SETTING_stop clear cache");
-                    return null;
-                }
                 long newValuesVersion = SystemProperties.getLong(mVersionSystemProperty, 0);
 
                 // Our own user's settings data uses a client-side cache

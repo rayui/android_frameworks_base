@@ -1004,8 +1004,6 @@ public class NotificationManagerService extends SystemService {
             mSettingsObserver.observe();
             mListeners.onBootPhaseAppsCanStart();
             mConditionProviders.onBootPhaseAppsCanStart();
-        } else if (phase == SystemService.PHASE_INSTABOOT_RESTORED) {
-            importOldBlockDb();
         }
     }
 

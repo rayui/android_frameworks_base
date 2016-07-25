@@ -48,8 +48,6 @@ public class NtpTrustedTime implements TrustedTime {
     private long mCachedNtpElapsedRealtime;
     private long mCachedNtpCertainty;
 
-    private static String[] mNtpserverList;
-
     private NtpTrustedTime(String server, long timeout) {
         if (LOGD) Log.d(TAG, "creating NtpTrustedTime using " + server);
         mServer = server;
@@ -61,8 +59,6 @@ public class NtpTrustedTime implements TrustedTime {
             final Resources res = context.getResources();
             final ContentResolver resolver = context.getContentResolver();
 
-            mNtpserverList = res.getStringArray(
-                    com.android.internal.R.array.config_ntpServer_list);
             final String defaultServer = res.getString(
                     com.android.internal.R.string.config_ntpServer);
             final long defaultTimeout = res.getInteger(
@@ -101,10 +97,7 @@ public class NtpTrustedTime implements TrustedTime {
             return false;
         }
 
-        for (int i = 0; i < mNtpserverList.length; i++) {
-            refreshTimeThread refresh = new refreshTimeThread(mNtpserverList[i]);
-            refresh.start();
-        }
+
         if (LOGD) Log.d(TAG, "forceRefresh() from cache miss");
         final SntpClient client = new SntpClient();
         if (client.requestTime(mServer, (int) mTimeout)) {
@@ -160,31 +153,5 @@ public class NtpTrustedTime implements TrustedTime {
 
     public long getCachedNtpTimeReference() {
         return mCachedNtpElapsedRealtime;
-    }
-
-    public void refreshTime(String ntp) {
-        final SntpClient client = new SntpClient();
-        if (LOGD) Log.d(TAG, "refreshtime() from " + ntp);
-        if (client.requestTime(ntp, (int) mTimeout)) {
-            mHasCache = true;
-            mCachedNtpTime = client.getNtpTime();
-            mCachedNtpElapsedRealtime = client.getNtpTimeReference();
-            mCachedNtpCertainty = client.getRoundTripTime() / 2;
-            if (LOGD) Log.d(TAG, "refreshtime() success");
-        } else {
-            if (LOGD) Log.d(TAG, "refreshtime() fail");
-        }
-    }
-
-    class refreshTimeThread extends Thread {
-        String mNtp = null;
-
-        public refreshTimeThread (String ntp) {
-            mNtp = ntp;
-        }
-
-        public void run(){
-            refreshTime(mNtp);
-        }
     }
 }

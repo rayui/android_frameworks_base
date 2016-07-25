@@ -263,7 +263,7 @@ easier.
 
     <!-- DeviceDefault theme for a window that will be displayed either full-screen on smaller
     screens (small, normal) or as a dialog on larger screens (large, xlarge). -->
-    <style name="Theme.DeviceDefault.DialogWhenLarge" parent="Theme.Material.DialogWhenLarge.NoActionBar"  />
+    <style name="Theme.DeviceDefault.DialogWhenLarge" parent="Theme.Material.DialogWhenLarge"  />
 
     <!-- DeviceDefault theme for a window without an action bar that will be displayed either
     full-screen on smaller screens (small, normal) or as a dialog on larger screens (large,
@@ -516,7 +516,7 @@ easier.
 
     <!-- DeviceDefault light theme for a window that will be displayed either full-screen on smaller
     screens (small, normal) or as a dialog on larger screens (large, xlarge). -->
-    <style name="Theme.DeviceDefault.Light.DialogWhenLarge" parent="Theme.Material.Light.DialogWhenLarge.NoActionBar"  />
+    <style name="Theme.DeviceDefault.Light.DialogWhenLarge" parent="Theme.Material.Light.DialogWhenLarge"  />
 
     <!-- DeviceDefault light theme for a window without an action bar that will be displayed either
     full-screen on smaller screens (small, normal) or as a dialog on larger screens (large,

@@ -105,7 +105,6 @@ import dalvik.system.VMRuntime;
 import java.io.File;
 import java.util.Timer;
 import java.util.TimerTask;
-import com.droidlogic.instaboot.InstabootManagerService;
 
 public final class SystemServer {
     private static final String TAG = "SystemServer";
@@ -156,11 +155,9 @@ public final class SystemServer {
     private PackageManagerService mPackageManagerService;
     private PackageManager mPackageManager;
     private ContentResolver mContentResolver;
-    private InstabootManagerService mInstabootService = null;
 
     private boolean mOnlyCore;
     private boolean mFirstBoot;
-    boolean mDisableInstaboot = true;
 
     /**
      * Called to initialize native system services.
@@ -177,7 +174,6 @@ public final class SystemServer {
     public SystemServer() {
         // Check for factory test mode.
         mFactoryTestMode = FactoryTest.getMode();
-        mDisableInstaboot = SystemProperties.getBoolean("config.disable_instaboot", true);
     }
 
     private void run() {
@@ -343,16 +339,6 @@ public final class SystemServer {
         // We need the default display before we can initialize the package manager.
         mSystemServiceManager.startBootPhase(SystemService.PHASE_WAIT_FOR_DEFAULT_DISPLAY);
 
-        if (!mDisableInstaboot) {
-            try {
-                Slog.i(TAG, "Instaboot Service");
-                mInstabootService = new InstabootManagerService(mSystemContext);
-                ServiceManager.addService("instaboot", mInstabootService);
-            } catch (Throwable e) {
-                reportWtf("starting InstabootService", e);
-            }
-        }
-
         // Only run "core" apps if we're encrypting the device.
         String cryptState = SystemProperties.get("vold.decrypt");
         if (ENCRYPTING_STATE.equals(cryptState)) {
@@ -509,8 +495,6 @@ public final class SystemServer {
             ServiceManager.addService(Context.INPUT_SERVICE, inputManager);
 
             mActivityManagerService.setWindowManager(wm);
-            if (!mDisableInstaboot)
-                mActivityManagerService.setInstabootManager(mInstabootService);
 
             inputManager.setWindowManagerCallbacks(wm.getInputMonitor());
             inputManager.start();
@@ -1082,24 +1066,6 @@ public final class SystemServer {
         final MediaRouterService mediaRouterF = mediaRouter;
         final AudioService audioServiceF = audioService;
         final MmsServiceBroker mmsServiceF = mmsService;
-        final InstabootManagerService instabootServiceF = mInstabootService;
-
-        if (mInstabootService != null) {
-            mInstabootService.setLaterServiceCallback(new Runnable() {
-                public void run() {
-                    Slog.i(TAG, "Later start services ready");
-
-                    try {
-                        mActivityManagerService.startObservingNativeCrashes();
-                    } catch (Throwable e) {
-                        reportWtf("observing native crashes", e);
-                    }
-
-                    mSystemServiceManager.startBootPhase(SystemService.PHASE_INSTABOOT_RESTORED);
-                    immF.reloadSettings();
-                }
-            });
-        }
 
         // We now tell the activity manager it is okay to run third party
         // code.  It will call back into us once it has gotten to the state
@@ -1112,12 +1078,10 @@ public final class SystemServer {
                 Slog.i(TAG, "Making services ready");
                 mSystemServiceManager.startBootPhase(
                         SystemService.PHASE_ACTIVITY_MANAGER_READY);
-                if (instabootServiceF == null || !instabootServiceF.isEnable()) {
-                    try {
-                        mActivityManagerService.startObservingNativeCrashes();
-                    } catch (Throwable e) {
-                        reportWtf("observing native crashes", e);
-                    }
+                try {
+                    mActivityManagerService.startObservingNativeCrashes();
+                } catch (Throwable e) {
+                    reportWtf("observing native crashes", e);
                 }
 
                 Slog.i(TAG, "WebViewFactory preparation");
