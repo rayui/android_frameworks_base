@@ -16,7 +16,6 @@
 
 package com.android.providers.settings;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.security.SecureRandom;
 import java.util.HashMap;
@@ -424,8 +423,7 @@ public class SettingsProvider extends ContentProvider {
     public boolean onCreate() {
         mBackupManager = new BackupManager(getContext());
         mUserManager = UserManager.get(getContext());
-        mDisableInstaboot = SystemProperties.getBoolean("config.disable_instaboot", true) ||
-                                !(new File("/system/bin/instabootserver").exists());
+        mDisableInstaboot = SystemProperties.getBoolean("config.disable_instaboot", true);
 
         setAppOps(AppOpsManager.OP_NONE, AppOpsManager.OP_WRITE_SETTINGS);
         establishDbTracking(UserHandle.USER_OWNER);

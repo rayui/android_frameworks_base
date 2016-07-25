@@ -177,8 +177,7 @@ public final class SystemServer {
     public SystemServer() {
         // Check for factory test mode.
         mFactoryTestMode = FactoryTest.getMode();
-        mDisableInstaboot = SystemProperties.getBoolean("config.disable_instaboot", true) ||
-                                !(new File("/system/bin/instabootserver").exists());
+        mDisableInstaboot = SystemProperties.getBoolean("config.disable_instaboot", true);
     }
 
     private void run() {

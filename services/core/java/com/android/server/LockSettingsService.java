@@ -51,7 +51,6 @@ import com.android.internal.widget.LockPatternUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.io.File;
 
 import android.os.SystemClock;
 
@@ -100,8 +99,7 @@ public class LockSettingsService extends ILockSettings.Stub {
                 }
             }
         });
-        mDisableInstaboot = SystemProperties.getBoolean("config.disable_instaboot", true) ||
-                                !(new File("/system/bin/instabootserver").exists());
+        mDisableInstaboot = SystemProperties.getBoolean("config.disable_instaboot", true);
     }
 
     private final BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
