@@ -88,7 +88,6 @@ import com.android.server.pm.UserManagerService;
 import com.android.server.statusbar.StatusBarManagerInternal;
 import com.android.server.wm.AppTransition;
 import com.android.server.wm.WindowManagerService;
-import com.android.server.zygotesecondary.ZygoteSecondary;
 import com.google.android.collect.Lists;
 import com.google.android.collect.Maps;
 
@@ -6156,29 +6155,8 @@ public final class ActivityManagerService extends ActivityManagerNative
             mCallFinishBooting = false;
         }
 
-        boolean needAbiFilter = false;
-        ArrayList<String> secondaryAbiList = new ArrayList<String>();
-        boolean enable = SystemProperties.get(
-            ZygoteSecondary.RO_DYNAMIC_ZYGOTE_SECONDARY, "disable").equals("enable");
-        if (enable) {
-            // If zygote_secondary service doesn't start, skip secondary abi
-            String zygote = SystemProperties.get("ro.zygote", "zygote32");
-            if (zygote.equals("zygote64_32")) {
-                java.util.Collections.addAll(secondaryAbiList, Build.SUPPORTED_32_BIT_ABIS);
-            } else if (zygote.equals("zygote32_64")) {
-                java.util.Collections.addAll(secondaryAbiList, Build.SUPPORTED_64_BIT_ABIS);
-            }
-            needAbiFilter = (secondaryAbiList.size() > 0) &&
-                SystemProperties.get(ZygoteSecondary.SYS_ZYGOTE_SECONDARY, "stop")
-                .equals("stop");
-        }
-
         ArraySet<String> completedIsas = new ArraySet<String>();
         for (String abi : Build.SUPPORTED_ABIS) {
-            if (enable && needAbiFilter && secondaryAbiList.contains(abi)) {
-                Slog.i(ZygoteSecondary.TAG, "filter abi: " + abi);
-                continue;
-            }
             Process.establishZygoteConnectionForAbi(abi);
             final String instructionSet = VMRuntime.getInstructionSet(abi);
             if (!completedIsas.contains(instructionSet)) {

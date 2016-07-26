@@ -653,28 +653,8 @@ public class ZygoteInit {
 
         /* For child process */
         if (pid == 0) {
-            /**
-            *  If system isn't first boot and persist.sys.zygote_secondary=stop in
-            *  zygote64_32 or zygote32_64 system, so that primary zygote don't
-            *  check and wait for secondary zygote.
-            *   --- start zygote_secondary service by following conditions:
-            *   1.first boot; 2.persist.sys.zygote_secondary=start; 3.data partition
-            *   has been erased before.
-            */
-            String zygote = SystemProperties.get("ro.zygote", "zygote32");
-            boolean support_secondary = zygote.equals("zygote64_32") || zygote.equals("zygote32_64");
-            boolean enable = SystemProperties.get("ro.dynamic.zygote_secondary", "disable").equals("enable");
-            if (enable && support_secondary) {
-                if (SystemProperties.get("ro.firstboot", "0").equals("1") ||
-                    SystemProperties.get("persist.sys.zygote_secondary", "start").equals("start")) {
-                    if (hasSecondZygote(abiList)) {
-                        waitForSecondaryZygote(socketName);
-                    }
-                }
-            } else {
-                if (hasSecondZygote(abiList)) {
-                    waitForSecondaryZygote(socketName);
-                }
+            if (hasSecondZygote(abiList)) {
+                waitForSecondaryZygote(socketName);
             }
 
             handleSystemServerProcess(parsedArgs);

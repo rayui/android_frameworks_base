@@ -98,7 +98,6 @@ import com.android.server.usb.UsbService;
 import com.android.server.wallpaper.WallpaperManagerService;
 import com.android.server.webkit.WebViewUpdateService;
 import com.android.server.wm.WindowManagerService;
-import com.android.server.zygotesecondary.ZygoteSecondary;
 
 import dalvik.system.VMRuntime;
 
@@ -355,12 +354,6 @@ public final class SystemServer {
                 mFactoryTestMode != FactoryTest.FACTORY_TEST_OFF, mOnlyCore);
         mFirstBoot = mPackageManagerService.isFirstBoot();
         mPackageManager = mSystemContext.getPackageManager();
-
-        if (SystemProperties.get(ZygoteSecondary.RO_DYNAMIC_ZYGOTE_SECONDARY, "disable")
-            .equals("enable")) {
-            // Start zygote_secondary or not
-            ZygoteSecondary.zygoteSecondaryStartOrNot(mPackageManagerService);
-        }
 
         Slog.i(TAG, "User Service");
         ServiceManager.addService(Context.USER_SERVICE, UserManagerService.getInstance());
@@ -1078,6 +1071,7 @@ public final class SystemServer {
                 Slog.i(TAG, "Making services ready");
                 mSystemServiceManager.startBootPhase(
                         SystemService.PHASE_ACTIVITY_MANAGER_READY);
+
                 try {
                     mActivityManagerService.startObservingNativeCrashes();
                 } catch (Throwable e) {

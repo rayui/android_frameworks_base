@@ -76,7 +76,6 @@ import com.android.server.SystemConfig;
 import com.android.server.Watchdog;
 import com.android.server.pm.Settings.DatabaseVersion;
 import com.android.server.storage.DeviceStorageMonitorInternal;
-import com.android.server.zygotesecondary.ZygoteSecondary;
 
 import org.xmlpull.v1.XmlSerializer;
 
@@ -394,9 +393,6 @@ public class PackageManagerService extends IPackageManager.Stub {
     // this lock held have the prefix "LP".
     final ArrayMap<String, PackageParser.Package> mPackages =
             new ArrayMap<String, PackageParser.Package>();
-
-    public final ArrayMap<String, PackageParser.Package> getPackages()
-        {return mPackages;}
 
     // Tracks available target package names -> overlay package paths.
     final ArrayMap<String, ArrayMap<String, PackageParser.Package>> mOverlays =
@@ -1088,14 +1084,6 @@ public class PackageManagerService extends IPackageManager.Stub {
                         }
                         if (args.observer != null) {
                             try {
-                                // If install app successed, start zygote_secondary service if
-                                // this app has secondary native lib
-                                boolean enable = SystemProperties.get(
-                                    ZygoteSecondary.RO_DYNAMIC_ZYGOTE_SECONDARY, "disable").equals("enable");
-                                if (enable && (res.returnCode == PackageManager.INSTALL_SUCCEEDED)) {
-                                    ZygoteSecondary.installPackageZygoteSecondaryStartOrNot(
-                                        res.returnCode, res.pkg.applicationInfo);
-                                }
                                 Bundle extras = extrasForInstallResult(res);
                                 args.observer.onPackageInstalled(res.name, res.returnCode,
                                         res.returnMsg, extras);
@@ -10877,23 +10865,9 @@ public class PackageManagerService extends IPackageManager.Stub {
         mHandler.post(new Runnable() {
             public void run() {
                 mHandler.removeCallbacks(this);
-                String primaryCpuAbi = null;
-                String secondaryCpuAbi = null;
-                boolean enable = SystemProperties.get(
-                    ZygoteSecondary.RO_DYNAMIC_ZYGOTE_SECONDARY, "disable").equals("enable");
-                if (enable) {
-                    primaryCpuAbi = mPackages.get(packageName).applicationInfo.primaryCpuAbi;
-                    secondaryCpuAbi = mPackages.get(packageName).applicationInfo.secondaryCpuAbi;
-                }
                 final int returnCode = deletePackageX(packageName, userId, flags);
                 if (observer != null) {
                     try {
-                        // If uninstall app successed, maybe need to stop zygote_secondary
-                        // service if all app has not any secondary native lib.
-                        if (enable && (returnCode == PackageManager.DELETE_SUCCEEDED)) {
-                            ZygoteSecondary.deletePackageZygoteSecondaryStartOrNot(
-                                returnCode, packageName, primaryCpuAbi, secondaryCpuAbi);
-                        }
                         observer.onPackageDeleted(packageName, returnCode, null);
                     } catch (RemoteException e) {
                         Log.i(TAG, "Observer no longer exists.");
