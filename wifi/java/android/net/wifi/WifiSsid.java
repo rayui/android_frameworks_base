@@ -140,17 +140,13 @@ public class WifiSsid implements Parcelable {
                         case '7':
                             val = asciiEncoded.charAt(i) - '0';
                             i++;
-                            try {
-                                if (asciiEncoded.charAt(i) >= '0' && asciiEncoded.charAt(i) <= '7') {
-                                    val = val * 8 + asciiEncoded.charAt(i) - '0';
-                                    i++;
-                                }
-                                if (asciiEncoded.charAt(i) >= '0' && asciiEncoded.charAt(i) <= '7') {
-                                    val = val * 8 + asciiEncoded.charAt(i) - '0';
-                                    i++;
-                                }
-                            } catch (NumberFormatException e) {
-                                val = 0;
+                            if (asciiEncoded.charAt(i) >= '0' && asciiEncoded.charAt(i) <= '7') {
+                                val = val * 8 + asciiEncoded.charAt(i) - '0';
+                                i++;
+                            }
+                            if (asciiEncoded.charAt(i) >= '0' && asciiEncoded.charAt(i) <= '7') {
+                                val = val * 8 + asciiEncoded.charAt(i) - '0';
+                                i++;
                             }
                             octets.write(val);
                             break;
