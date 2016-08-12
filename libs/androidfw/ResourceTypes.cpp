@@ -3623,10 +3623,7 @@ ssize_t ResTable::getResource(uint32_t resID, Res_value* outValue, bool mayBeBag
 
     if (p < 0) {
         if (Res_GETPACKAGE(resID)+1 == 0) {
-            //ignore me if resID is 0x0
-            if (resID != 0) {
-                ALOGW("No package identifier when getting value for resource number 0x%08x", resID);
-            }
+            ALOGW("No package identifier when getting value for resource number 0x%08x", resID);
         } else {
             ALOGW("No known package when getting value for resource number 0x%08x", resID);
         }

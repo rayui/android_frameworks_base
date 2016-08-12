@@ -5025,9 +5025,6 @@ public final class ActivityThread {
                         Slog.v(TAG, "installProvider: lost the race, "
                                 + "using existing local provider");
                     }
-                    //terminate the ContentProvider to release resources in
-                    //ContentProvider and prevent memory leaks
-                    localProvider.shutdown();
                     provider = pr.mProvider;
                 } else {
                     holder = new IActivityManager.ContentProviderHolder(info);
