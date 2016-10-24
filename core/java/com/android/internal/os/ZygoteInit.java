@@ -192,6 +192,7 @@ public class ZygoteInit {
     static void closeServerSocket() {
         try {
             if (sServerSocket != null) {
+                FileDescriptor fd = sServerSocket.getFileDescriptor();
                 sServerSocket.close();
                 /*
                 FileDescriptor fd = sServerSocket.getFileDescriptor();
