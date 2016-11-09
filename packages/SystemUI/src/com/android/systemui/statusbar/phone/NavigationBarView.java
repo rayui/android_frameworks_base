@@ -480,7 +480,12 @@ public class NavigationBarView extends LinearLayout {
         for (int i=0; i<4; i++) {
             mRotatedViews[i].setVisibility(View.GONE);
         }
-        mCurrentView = mRotatedViews[rot];
+
+        if (rot == Surface.ROTATION_0 && mVertical) {
+            mCurrentView = mRotatedViews[Surface.ROTATION_90];
+        } else {
+            mCurrentView = mRotatedViews[rot];
+        }
         mCurrentView.setVisibility(View.VISIBLE);
         updateLayoutTransitionsEnabled();
 
