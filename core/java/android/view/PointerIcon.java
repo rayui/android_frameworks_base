@@ -26,6 +26,8 @@ import android.content.res.XmlResourceParser;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.graphics.Matrix;
+import android.provider.Settings;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.util.Log;
@@ -349,6 +351,17 @@ public final class PointerIcon implements Parcelable {
         }
     }
 
+    public static Bitmap rotateBitmap(Bitmap source, float angle) {
+        Log.e(TAG, "angle = " + angle);
+        if (angle == 0)
+            return source;
+
+        Matrix matrix = new Matrix();
+        matrix.postRotate(angle);
+        return Bitmap.createBitmap(source, 0, 0, source.getWidth(),
+                source.getHeight(), matrix, true);
+    }
+
     @Override
     public boolean equals(Object other) {
         if (this == other) {
@@ -410,7 +423,9 @@ public final class PointerIcon implements Parcelable {
         }
 
         // Set the properties now that we have successfully loaded the icon.
-        mBitmap = ((BitmapDrawable)drawable).getBitmap();
+        int rotation = android.provider.Settings.System.getInt(
+                context.getContentResolver(), Settings.System.USER_ROTATION, 0);
+        mBitmap = rotateBitmap(((BitmapDrawable)drawable).getBitmap(), 90 * rotation);
         mHotSpotX = hotSpotX;
         mHotSpotY = hotSpotY;
     }
