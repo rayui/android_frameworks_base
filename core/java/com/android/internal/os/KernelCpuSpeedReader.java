@@ -16,10 +16,7 @@
 package com.android.internal.os;
 
 import android.text.TextUtils;
-import android.system.OsConstants;
 import android.util.Slog;
-
-import libcore.io.Libcore;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -32,7 +29,7 @@ import java.util.Arrays;
  *
  * freq time
  *
- * where time is measured in jiffies.
+ * where time is measured in 1/100 seconds.
  */
 public class KernelCpuSpeedReader {
     private static final String TAG = "KernelCpuSpeedReader";
@@ -40,9 +37,6 @@ public class KernelCpuSpeedReader {
     private final String mProcFile;
     private final long[] mLastSpeedTimes;
     private final long[] mDeltaSpeedTimes;
-
-    // How long a CPU jiffy is in milliseconds.
-    private final long mJiffyMillis;
 
     /**
      * @param cpuNumber The cpu (cpu0, cpu1, etc) whose state to read.
@@ -52,8 +46,6 @@ public class KernelCpuSpeedReader {
                 cpuNumber);
         mLastSpeedTimes = new long[numSpeedSteps];
         mDeltaSpeedTimes = new long[numSpeedSteps];
-        long jiffyHz = Libcore.os.sysconf(OsConstants._SC_CLK_TCK);
-        mJiffyMillis = 1000/jiffyHz;
     }
 
     /**
@@ -70,7 +62,8 @@ public class KernelCpuSpeedReader {
                 splitter.setString(line);
                 Long.parseLong(splitter.next());
 
-                long time = Long.parseLong(splitter.next()) * mJiffyMillis;
+                // The proc file reports time in 1/100 sec, so convert to milliseconds.
+                long time = Long.parseLong(splitter.next()) * 10;
                 if (time < mLastSpeedTimes[speedIndex]) {
                     // The stats reset when the cpu hotplugged. That means that the time
                     // we read is offset from 0, so the time is the delta.
