@@ -194,7 +194,7 @@ void Lookup3GammaFontRenderer::endPrecaching() {
 
 void Lookup3GammaFontRenderer::clear() {
     for (int i = 0; i < kGammaCount; i++) {
-        mRenderers[i].reset(nullptr);
+        mRenderers[i].release();
     }
 }
 
@@ -215,7 +215,7 @@ void Lookup3GammaFontRenderer::flush() {
 
     if (count <= 1 || min < 0) return;
 
-    mRenderers[min].reset(nullptr);
+    mRenderers[min].release();
 
     // Also eliminate the caches for large glyphs, as they consume significant memory
     for (int i = 0; i < kGammaCount; ++i) {

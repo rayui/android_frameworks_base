@@ -251,7 +251,7 @@ void Layer::defer(const OpenGLRenderer& rootRenderer) {
 void Layer::cancelDefer() {
     renderNode = nullptr;
     deferredUpdateScheduled = false;
-    deferredList.reset(nullptr);
+    deferredList.release();
 }
 
 void Layer::flush() {

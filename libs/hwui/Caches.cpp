@@ -117,7 +117,7 @@ void Caches::initStaticProperties() {
 
 void Caches::terminate() {
     if (!mInitialized) return;
-    mRegionMesh.reset(nullptr);
+    mRegionMesh.release();
 
     fboCache.clear();
 
