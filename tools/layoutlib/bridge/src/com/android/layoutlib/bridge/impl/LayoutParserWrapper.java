@@ -176,7 +176,8 @@ public class LayoutParserWrapper implements XmlPullParser {
         if (mPeeked) {
             if (mAttributes == null) {
                 if (mEventType != START_TAG) {
-                    throw new IndexOutOfBoundsException("getAttributeValue() called when not at START_TAG.");
+                    throw new IndexOutOfBoundsException("getAttributeValue() called when not at " +
+                            "START_TAG.");
                 } else {
                     return null;
                 }
