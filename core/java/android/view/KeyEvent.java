@@ -761,19 +761,6 @@ public class KeyEvent extends InputEvent implements Parcelable {
      * Backs out one level of a navigation hierarchy or collapses the item that currently has
      * focus. */
     public static final int KEYCODE_NAVIGATE_OUT    = 263;
-    /** Key code constant: Primary stem key for Wear
-     * Main power/reset button on watch.
-     * @hide */
-    public static final int KEYCODE_STEM_PRIMARY = 264;
-    /** Key code constant: Generic stem key 1 for Wear
-     * @hide */
-    public static final int KEYCODE_STEM_1 = 265;
-    /** Key code constant: Generic stem key 2 for Wear
-     * @hide */
-    public static final int KEYCODE_STEM_2 = 266;
-    /** Key code constant: Generic stem key 3 for Wear
-     * @hide */
-    public static final int KEYCODE_STEM_3 = 267;
     /** Key code constant: Skip forward media key. */
     public static final int KEYCODE_MEDIA_SKIP_FORWARD = 272;
     /** Key code constant: Skip backward media key. */

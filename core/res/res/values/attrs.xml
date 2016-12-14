@@ -1806,10 +1806,6 @@ i
         <enum name="KEYCODE_NAVIGATE_NEXT" value="261" />
         <enum name="KEYCODE_NAVIGATE_IN" value="262" />
         <enum name="KEYCODE_NAVIGATE_OUT" value="263" />
-        <enum name="KEYCODE_STEM_PRIMARY" value="264" />
-        <enum name="KEYCODE_STEM_1" value="265" />
-        <enum name="KEYCODE_STEM_2" value="266" />
-        <enum name="KEYCODE_STEM_3" value="267" />
         <enum name="KEYCODE_MEDIA_SKIP_FORWARD" value="272" />
         <enum name="KEYCODE_MEDIA_SKIP_BACKWARD" value="273" />
         <enum name="KEYCODE_MEDIA_STEP_FORWARD" value="274" />
