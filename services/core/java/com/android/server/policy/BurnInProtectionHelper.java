@@ -72,9 +72,6 @@ public class BurnInProtectionHelper implements DisplayManager.DisplayListener,
     /* 1 means increasing, -1 means decreasing */
     private int mYOffsetDirection = 1;
 
-    private int mAppliedBurnInXOffset = 0;
-    private int mAppliedBurnInYOffset = 0;
-
     private final AlarmManager mAlarmManager;
     private final PendingIntent mBurnInProtectionIntent;
     private final DisplayManagerInternal mDisplayManagerInternal;
@@ -142,8 +139,6 @@ public class BurnInProtectionHelper implements DisplayManager.DisplayListener,
                 mFirstUpdate = false;
             } else {
                 adjustOffsets();
-                mAppliedBurnInXOffset = mLastBurnInXOffset;
-                mAppliedBurnInYOffset = mLastBurnInYOffset;
                 mDisplayManagerInternal.setDisplayOffsets(mDisplay.getDisplayId(),
                         mLastBurnInXOffset, mLastBurnInYOffset);
             }
@@ -263,8 +258,6 @@ public class BurnInProtectionHelper implements DisplayManager.DisplayListener,
     @Override
     public void onAnimationEnd(Animator animator) {
         if (animator == mCenteringAnimator && !mBurnInProtectionActive) {
-            mAppliedBurnInXOffset = 0;
-            mAppliedBurnInYOffset = 0;
             // No matter how the animation finishes, we want to zero the offsets.
             mDisplayManagerInternal.setDisplayOffsets(mDisplay.getDisplayId(), 0, 0);
         }
@@ -283,7 +276,7 @@ public class BurnInProtectionHelper implements DisplayManager.DisplayListener,
         if (!mBurnInProtectionActive) {
             final float value = (Float) valueAnimator.getAnimatedValue();
             mDisplayManagerInternal.setDisplayOffsets(mDisplay.getDisplayId(),
-                    (int) (mAppliedBurnInXOffset * value), (int) (mAppliedBurnInYOffset * value));
+                    (int) (mLastBurnInXOffset * value), (int) (mLastBurnInYOffset * value));
         }
     }
 }
