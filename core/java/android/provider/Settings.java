@@ -8098,13 +8098,6 @@ public final class Settings {
          * @hide
          */
         public static final String CONTACT_METADATA_SYNC = "contact_metadata_sync";
-
-        /**
-         * Whether to enable cellular on boot.
-         * The value 1 - enable, 0 - disable
-         * @hide
-         */
-        public static final String ENABLE_CELLULAR_ON_BOOT = "enable_cellular_on_boot";
     }
 
     /**
