@@ -718,14 +718,13 @@ class TextLine {
      * @param bottom the bottom of the line
      * @param fmi receives metrics information, can be null
      * @param needWidth true if the width of the run is needed
-     * @param offset the offset for the purpose of measuring
      * @return the signed width of the run based on the run direction; only
      * valid if needWidth is true
      */
     private float handleText(TextPaint wp, int start, int end,
             int contextStart, int contextEnd, boolean runIsRtl,
             Canvas c, float x, int top, int y, int bottom,
-            FontMetricsInt fmi, boolean needWidth, int offset) {
+            FontMetricsInt fmi, boolean needWidth) {
 
         // Get metrics first (even for empty strings or "0" width runs)
         if (fmi != null) {
@@ -743,11 +742,11 @@ class TextLine {
         if (needWidth || (c != null && (wp.bgColor != 0 || wp.underlineColor != 0 || runIsRtl))) {
             if (mCharsValid) {
                 ret = wp.getRunAdvance(mChars, start, end, contextStart, contextEnd,
-                        runIsRtl, offset);
+                        runIsRtl, end);
             } else {
                 int delta = mStart;
                 ret = wp.getRunAdvance(mText, delta + start, delta + end,
-                        delta + contextStart, delta + contextEnd, runIsRtl, delta + offset);
+                        delta + contextStart, delta + contextEnd, runIsRtl, delta + end);
             }
         }
 
@@ -896,8 +895,8 @@ class TextLine {
             TextPaint wp = mWorkPaint;
             wp.set(mPaint);
             final int mlimit = measureLimit;
-            return handleText(wp, start, limit, start, limit, runIsRtl, c, x, top,
-                    y, bottom, fmi, needWidth || mlimit < measureLimit, mlimit);
+            return handleText(wp, start, mlimit, start, limit, runIsRtl, c, x, top,
+                    y, bottom, fmi, needWidth || mlimit < measureLimit);
         }
 
         mMetricAffectingSpanSpanSet.init(mSpanned, mStart + start, mStart + limit);
@@ -941,14 +940,13 @@ class TextLine {
             }
 
             for (int j = i, jnext; j < mlimit; j = jnext) {
-                jnext = mCharacterStyleSpanSet.getNextTransition(mStart + j, mStart + inext) -
+                jnext = mCharacterStyleSpanSet.getNextTransition(mStart + j, mStart + mlimit) -
                         mStart;
-                int offset = Math.min(jnext, mlimit);
 
                 wp.set(mPaint);
                 for (int k = 0; k < mCharacterStyleSpanSet.numberOfSpans; k++) {
                     // Intentionally using >= and <= as explained above
-                    if ((mCharacterStyleSpanSet.spanStarts[k] >= mStart + offset) ||
+                    if ((mCharacterStyleSpanSet.spanStarts[k] >= mStart + jnext) ||
                             (mCharacterStyleSpanSet.spanEnds[k] <= mStart + j)) continue;
 
                     CharacterStyle span = mCharacterStyleSpanSet.spans[k];
@@ -960,7 +958,7 @@ class TextLine {
                     wp.setHyphenEdit(0);
                 }
                 x += handleText(wp, j, jnext, i, inext, runIsRtl, c, x,
-                        top, y, bottom, fmi, needWidth || jnext < measureLimit, offset);
+                        top, y, bottom, fmi, needWidth || jnext < measureLimit);
             }
         }
 
