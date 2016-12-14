@@ -25,7 +25,6 @@ import android.content.Context;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.os.ParcelUuid;
-import android.os.Process;
 import android.os.RemoteException;
 import android.util.Log;
 
@@ -824,9 +823,6 @@ public final class BluetoothDevice implements Parcelable {
             return false;
         }
         try {
-            Log.i(TAG, "createBond() for device " + getAddress() +
-                    " called by pid: " + Process.myPid() +
-                    " tid: " + Process.myTid());
             return sService.createBond(this, TRANSPORT_AUTO);
         } catch (RemoteException e) {Log.e(TAG, "", e);}
         return false;
@@ -858,9 +854,6 @@ public final class BluetoothDevice implements Parcelable {
             throw new IllegalArgumentException(transport + " is not a valid Bluetooth transport");
         }
         try {
-            Log.i(TAG, "createBond() for device " + getAddress() +
-                    " called by pid: " + Process.myPid() +
-                    " tid: " + Process.myTid());
             return sService.createBond(this, transport);
         } catch (RemoteException e) {Log.e(TAG, "", e);}
         return false;
@@ -929,9 +922,6 @@ public final class BluetoothDevice implements Parcelable {
             return false;
         }
         try {
-            Log.i(TAG, "cancelBondProcess() for device " + getAddress() +
-                    " called by pid: " + Process.myPid() +
-                    " tid: " + Process.myTid());
             return sService.cancelBondProcess(this);
         } catch (RemoteException e) {Log.e(TAG, "", e);}
         return false;
@@ -953,9 +943,6 @@ public final class BluetoothDevice implements Parcelable {
             return false;
         }
         try {
-            Log.i(TAG, "removeBond() for device " + getAddress() +
-                    " called by pid: " + Process.myPid() +
-                    " tid: " + Process.myTid());
             return sService.removeBond(this);
         } catch (RemoteException e) {Log.e(TAG, "", e);}
         return false;
