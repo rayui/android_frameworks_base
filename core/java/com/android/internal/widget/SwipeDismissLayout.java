@@ -89,21 +89,14 @@ public class SwipeDismissLayout extends FrameLayout {
                 }
             };
     private BroadcastReceiver mScreenOffReceiver = new BroadcastReceiver() {
-        private Runnable mRunnable = new Runnable() {
-            @Override
-            public void run() {
-                if (mDismissed) {
-                    dismiss();
-                } else {
-                    cancel();
-                }
-                resetMembers();
-            }
-        };
-
         @Override
         public void onReceive(Context context, Intent intent) {
-            post(mRunnable);
+            if (mDismissed) {
+                dismiss();
+            } else {
+                cancel();
+            }
+            resetMembers();
         }
     };
     private IntentFilter mScreenOffFilter = new IntentFilter(Intent.ACTION_SCREEN_OFF);
