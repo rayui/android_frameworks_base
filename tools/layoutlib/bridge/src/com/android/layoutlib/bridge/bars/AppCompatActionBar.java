@@ -16,13 +16,10 @@
 
 package com.android.layoutlib.bridge.bars;
 
-import com.android.ide.common.rendering.api.LayoutLog;
-import com.android.ide.common.rendering.api.LayoutlibCallback;
 import com.android.ide.common.rendering.api.RenderResources;
 import com.android.ide.common.rendering.api.ResourceValue;
 import com.android.ide.common.rendering.api.SessionParams;
 import com.android.ide.common.rendering.api.StyleResourceValue;
-import com.android.layoutlib.bridge.Bridge;
 import com.android.layoutlib.bridge.android.BridgeContext;
 import com.android.layoutlib.bridge.impl.ResourceHelper;
 import com.android.resources.ResourceType;
@@ -48,8 +45,6 @@ public class AppCompatActionBar extends BridgeActionBar {
 
     private Object mWindowDecorActionBar;
     private static final String WINDOW_ACTION_BAR_CLASS = "android.support.v7.internal.app.WindowDecorActionBar";
-    // This is used on v23.1.1 and later.
-    private static final String WINDOW_ACTION_BAR_CLASS_NEW = "android.support.v7.app.WindowDecorActionBar";
     private Class<?> mWindowActionBarClass;
 
     /**
@@ -75,26 +70,14 @@ public class AppCompatActionBar extends BridgeActionBar {
         try {
             Class[] constructorParams = {View.class};
             Object[] constructorArgs = {getDecorContent()};
-            LayoutlibCallback callback = params.getLayoutlibCallback();
-            // First try to load the class as was available before appcompat v23.1.1, without
-            // logging warnings.
-            try {
-                mWindowDecorActionBar = callback.loadClass(WINDOW_ACTION_BAR_CLASS,
-                        constructorParams, constructorArgs);
-            } catch (ClassNotFoundException ignore) {
-            }
-            if (mWindowDecorActionBar == null) {
-                // If failed, load the new class, while logging warnings.
-                mWindowDecorActionBar = callback.loadView(WINDOW_ACTION_BAR_CLASS_NEW,
-                        constructorParams, constructorArgs);
-            }
+            mWindowDecorActionBar = params.getLayoutlibCallback().loadView(WINDOW_ACTION_BAR_CLASS,
+                    constructorParams, constructorArgs);
 
             mWindowActionBarClass = mWindowDecorActionBar == null ? null :
                     mWindowDecorActionBar.getClass();
             setupActionBar();
         } catch (Exception e) {
-            Bridge.getLog().warning(LayoutLog.TAG_BROKEN,
-                    "Failed to load AppCompat ActionBar with unknown error.", e);
+            e.printStackTrace();
         }
     }
 
