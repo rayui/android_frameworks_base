@@ -48,9 +48,6 @@ interface INetworkPolicyManager {
     /** Snooze limit on policy matching given template. */
     void snoozeLimit(in NetworkTemplate template);
 
-    /** Snooze warning on policy matching given template. */
-    void snoozeWarning(in NetworkTemplate template);
-
     /** Control if background data is restricted system-wide. */
     void setRestrictBackground(boolean restrictBackground);
     boolean getRestrictBackground();
