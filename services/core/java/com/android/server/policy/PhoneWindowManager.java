@@ -1336,7 +1336,6 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         mDreamManagerInternal = LocalServices.getService(DreamManagerInternal.class);
         mPowerManagerInternal = LocalServices.getService(PowerManagerInternal.class);
         mAppOpsManager = (AppOpsManager) mContext.getSystemService(Context.APP_OPS_SERVICE);
-        mPowerManagerInternal = LocalServices.getService(PowerManagerInternal.class);
 
         // Init display burn-in protection
         boolean burnInProtectionEnabled = context.getResources().getBoolean(
@@ -5095,15 +5094,6 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                     sleepPress(event.getEventTime());
                 } else {
                     sleepRelease(event.getEventTime());
-                }
-                break;
-            }
-
-            case KeyEvent.KEYCODE_SOFT_SLEEP: {
-                result &= ~ACTION_PASS_TO_USER;
-                isWakeKey = false;
-                if (!down) {
-                    mPowerManagerInternal.setUserInactiveOverrideFromWindowManager();
                 }
                 break;
             }
