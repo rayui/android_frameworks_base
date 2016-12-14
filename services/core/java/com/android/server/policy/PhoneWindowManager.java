@@ -891,15 +891,6 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         }
     }
 
-    private static final String POWER_KEY_DEFINITION = "power_key_definition";
-    private boolean isPowerKeyShutdownDefinition() {
-        int default_value = 0;
-        if (SystemProperties.getBoolean("ro.platform.has.tvuimode", false)) {
-            default_value = 1;
-        }
-        return Settings.System.getInt(mContext.getContentResolver(), POWER_KEY_DEFINITION, default_value) == 1 ? true : false;
-    }
-
     private void interceptPowerKeyDown(KeyEvent event, boolean interactive) {
         // Hold a wake lock until the power key is released.
         if (!mPowerKeyWakeLock.isHeld()) {
@@ -959,16 +950,11 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             if (interactive) {
                 // When interactive, we're already awake.
                 // Wait for a long press or for the button to be released to decide what to do.
-                if ((hasLongPressOnPowerBehavior()
-                    && !SystemProperties.getBoolean("ro.platform.has.tvuimode", false)) || isPowerKeyShutdownDefinition()) {
+                if (hasLongPressOnPowerBehavior()) {
                     Message msg = mHandler.obtainMessage(MSG_POWER_LONG_PRESS);
                     msg.setAsynchronous(true);
-                    if (isPowerKeyShutdownDefinition()) {
-                        mHandler.sendMessage(msg);
-                    } else {
-                        mHandler.sendMessageDelayed(msg,
-                                ViewConfiguration.get(mContext).getDeviceGlobalActionKeyTimeout());
-                    }
+                    mHandler.sendMessageDelayed(msg,
+                            ViewConfiguration.get(mContext).getDeviceGlobalActionKeyTimeout());
                 }
             } else {
                 wakeUpFromPowerKey(event.getDownTime());
@@ -998,7 +984,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         cancelPendingScreenshotChordAction();
         cancelPendingPowerKeyAction();
 
-        if (!handled && !isPowerKeyShutdownDefinition()) {
+        if (!handled) {
             // Figure out how to handle the key now that it has been released.
             mPowerKeyPressCounter += 1;
 
@@ -1031,7 +1017,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     }
 
     private void cancelPendingPowerKeyAction() {
-        if (!mPowerKeyHandled && !isPowerKeyShutdownDefinition()) {
+        if (!mPowerKeyHandled) {
             mPowerKeyHandled = true;
             mHandler.removeMessages(MSG_POWER_LONG_PRESS);
         }
