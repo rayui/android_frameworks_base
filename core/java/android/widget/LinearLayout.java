@@ -348,6 +348,7 @@ public class LinearLayout extends ViewGroup {
         final int count = getVirtualChildCount();
         for (int i = 0; i < count; i++) {
             final View child = getVirtualChildAt(i);
+
             if (child != null && child.getVisibility() != GONE) {
                 if (hasDividerBeforeChildAt(i)) {
                     final LayoutParams lp = (LayoutParams) child.getLayoutParams();
@@ -376,7 +377,7 @@ public class LinearLayout extends ViewGroup {
      */
     private View getLastNonGoneChild() {
         for (int i = getVirtualChildCount() - 1; i >= 0; i--) {
-            final View child = getVirtualChildAt(i);
+            View child = getVirtualChildAt(i);
             if (child != null && child.getVisibility() != GONE) {
                 return child;
             }
@@ -389,6 +390,7 @@ public class LinearLayout extends ViewGroup {
         final boolean isLayoutRtl = isLayoutRtl();
         for (int i = 0; i < count; i++) {
             final View child = getVirtualChildAt(i);
+
             if (child != null && child.getVisibility() != GONE) {
                 if (hasDividerBeforeChildAt(i)) {
                     final LayoutParams lp = (LayoutParams) child.getLayoutParams();
@@ -575,9 +577,8 @@ public class LinearLayout extends ViewGroup {
      * for an example.</p>
      *
      * @param index the child's index
-     * @return the child at the specified index, may be {@code null}
+     * @return the child at the specified index
      */
-    @Nullable
     View getVirtualChildAt(int index) {
         return getChildAt(index);
     }
@@ -658,7 +659,7 @@ public class LinearLayout extends ViewGroup {
      */
     private boolean allViewsAreGoneBefore(int childIndex) {
         for (int i = childIndex - 1; i >= 0; i--) {
-            final View child = getVirtualChildAt(i);
+            View child = getVirtualChildAt(i);
             if (child != null && child.getVisibility() != GONE) {
                 return false;
             }
@@ -702,6 +703,7 @@ public class LinearLayout extends ViewGroup {
         // See how tall everyone is. Also remember max width.
         for (int i = 0; i < count; ++i) {
             final View child = getVirtualChildAt(i);
+
             if (child == null) {
                 mTotalLength += measureNullChild(i);
                 continue;
@@ -820,6 +822,7 @@ public class LinearLayout extends ViewGroup {
 
             for (int i = 0; i < count; ++i) {
                 final View child = getVirtualChildAt(i);
+
                 if (child == null) {
                     mTotalLength += measureNullChild(i);
                     continue;
@@ -935,6 +938,7 @@ public class LinearLayout extends ViewGroup {
             if (useLargestChild && heightMode != MeasureSpec.EXACTLY) {
                 for (int i = 0; i < count; i++) {
                     final View child = getVirtualChildAt(i);
+
                     if (child == null || child.getVisibility() == View.GONE) {
                         continue;
                     }
@@ -977,7 +981,7 @@ public class LinearLayout extends ViewGroup {
                 MeasureSpec.EXACTLY);
         for (int i = 0; i< count; ++i) {
            final View child = getVirtualChildAt(i);
-           if (child != null && child.getVisibility() != GONE) {
+           if (child.getVisibility() != GONE) { 
                LinearLayout.LayoutParams lp = ((LinearLayout.LayoutParams)child.getLayoutParams());
                
                if (lp.width == LayoutParams.MATCH_PARENT) {
@@ -1043,6 +1047,7 @@ public class LinearLayout extends ViewGroup {
         // See how wide everyone is. Also remember max height.
         for (int i = 0; i < count; ++i) {
             final View child = getVirtualChildAt(i);
+
             if (child == null) {
                 mTotalLength += measureNullChild(i);
                 continue;
@@ -1198,6 +1203,7 @@ public class LinearLayout extends ViewGroup {
 
             for (int i = 0; i < count; ++i) {
                 final View child = getVirtualChildAt(i);
+
                 if (child == null) {
                     mTotalLength += measureNullChild(i);
                     continue;
@@ -1355,6 +1361,7 @@ public class LinearLayout extends ViewGroup {
             if (useLargestChild && widthMode != MeasureSpec.EXACTLY) {
                 for (int i = 0; i < count; i++) {
                     final View child = getVirtualChildAt(i);
+
                     if (child == null || child.getVisibility() == View.GONE) {
                         continue;
                     }
@@ -1399,7 +1406,7 @@ public class LinearLayout extends ViewGroup {
                 MeasureSpec.EXACTLY);
         for (int i = 0; i < count; ++i) {
            final View child = getVirtualChildAt(i);
-           if (child != null && child.getVisibility() != GONE) {
+           if (child.getVisibility() != GONE) { 
                LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) child.getLayoutParams();
                
                if (lp.height == LayoutParams.MATCH_PARENT) {
@@ -1659,8 +1666,9 @@ public class LinearLayout extends ViewGroup {
         }
 
         for (int i = 0; i < count; i++) {
-            final int childIndex = start + dir * i;
+            int childIndex = start + dir * i;
             final View child = getVirtualChildAt(childIndex);
+
             if (child == null) {
                 childLeft += measureNullChild(childIndex);
             } else if (child.getVisibility() != GONE) {
