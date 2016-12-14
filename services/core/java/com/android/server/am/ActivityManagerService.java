@@ -15106,10 +15106,6 @@ public final class ActivityManagerService extends ActivityManagerNative
                 pw.print(" Lost RAM: "); pw.print(memInfo.getTotalSizeKb()
                         - totalPss - memInfo.getFreeSizeKb() - memInfo.getCachedSizeKb()
                         - memInfo.getKernelUsedSizeKb()); pw.println(" kB");
-            } else {
-                pw.print("lostram,"); pw.println(memInfo.getTotalSizeKb()
-                        - totalPss - memInfo.getFreeSizeKb() - memInfo.getCachedSizeKb()
-                        - memInfo.getKernelUsedSizeKb());
             }
             if (!brief) {
                 if (memInfo.getZramTotalSizeKb() != 0) {
