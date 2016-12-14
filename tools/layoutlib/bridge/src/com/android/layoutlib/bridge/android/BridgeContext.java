@@ -409,7 +409,7 @@ public final class BridgeContext extends Context {
                     pushParser(blockParser);
                     return Pair.of(
                             mBridgeInflater.inflate(blockParser, parent, attachToRoot),
-                            Boolean.TRUE);
+                            true);
                 } finally {
                     popParser();
                 }
@@ -447,7 +447,7 @@ public final class BridgeContext extends Context {
                         pushParser(blockParser);
                         return Pair.of(
                                 mBridgeInflater.inflate(blockParser, parent, attachToRoot),
-                                Boolean.FALSE);
+                                false);
                     } finally {
                         popParser();
                     }
@@ -470,7 +470,7 @@ public final class BridgeContext extends Context {
                             resource.getName()), null);
         }
 
-        return Pair.of(null, Boolean.FALSE);
+        return Pair.of(null, false);
     }
 
     @SuppressWarnings("deprecation")

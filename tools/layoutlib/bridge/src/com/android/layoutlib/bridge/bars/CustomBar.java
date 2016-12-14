@@ -116,11 +116,11 @@ abstract class CustomBar extends LinearLayout {
                 density = iconLoader.getDensity();
                 String path = iconLoader.getPath();
                 // look for a cached bitmap
-                Bitmap bitmap = Bridge.getCachedBitmap(path, Boolean.TRUE /*isFramework*/);
+                Bitmap bitmap = Bridge.getCachedBitmap(path, true /*isFramework*/);
                 if (bitmap == null) {
                     try {
                         bitmap = Bitmap_Delegate.createBitmap(stream, false /*isMutable*/, density);
-                        Bridge.setCachedBitmap(path, bitmap, Boolean.TRUE /*isFramework*/);
+                        Bridge.setCachedBitmap(path, bitmap, true /*isFramework*/);
                     } catch (IOException e) {
                         return;
                     }
