@@ -787,8 +787,6 @@ public class KeyEvent extends InputEvent implements Parcelable {
 
     private static final int LAST_KEYCODE = KEYCODE_MEDIA_STEP_BACKWARD;
 
-    public static final int KEYCODE_NETFLIX = 1001;
-
     // NOTE: If you add a new keycode here you must also add it to:
     //  isSystem()
     //  isWakeKey()
