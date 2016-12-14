@@ -53,35 +53,24 @@ public class ParserFactory {
     @NonNull
     public static XmlPullParser create(@NonNull File f)
             throws XmlPullParserException, FileNotFoundException {
-        return create(f, false);
+        InputStream stream = new FileInputStream(f);
+        return create(stream, f.getName(), f.length());
     }
 
-    public static XmlPullParser create(@NonNull File f, boolean isLayout)
-      throws XmlPullParserException, FileNotFoundException {
-        InputStream stream = new FileInputStream(f);
-        return create(stream, f.getName(), f.length(), isLayout);
-    }
     @NonNull
     public static XmlPullParser create(@NonNull InputStream stream, @Nullable String name)
         throws XmlPullParserException {
-        return create(stream, name, -1, false);
+        return create(stream, name, -1);
     }
 
     @NonNull
     private static XmlPullParser create(@NonNull InputStream stream, @Nullable String name,
-            long size, boolean isLayout) throws XmlPullParserException {
+            long size) throws XmlPullParserException {
         XmlPullParser parser = instantiateParser(name);
 
         stream = readAndClose(stream, name, size);
 
         parser.setInput(stream, ENCODING);
-        if (isLayout) {
-            try {
-                return new LayoutParserWrapper(parser).peekTillLayoutStart();
-            } catch (IOException e) {
-                throw new XmlPullParserException(null, parser, e);
-            }
-        }
         return parser;
     }
 
