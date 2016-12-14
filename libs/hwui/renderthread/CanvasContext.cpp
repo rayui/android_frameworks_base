@@ -289,11 +289,11 @@ void CanvasContext::doFrame() {
 
     ATRACE_CALL();
 
-    nsecs_t vsync = mRenderThread.timeLord().computeFrameTimeNanos();
     int64_t frameInfo[UI_THREAD_FRAME_INFO_SIZE];
     UiFrameInfoBuilder(frameInfo)
         .addFlag(FrameInfoFlags::RTAnimation)
-        .setVsync(vsync, vsync);
+        .setVsync(mRenderThread.timeLord().computeFrameTimeNanos(),
+                mRenderThread.timeLord().latestVsync());
 
     TreeInfo info(TreeInfo::MODE_RT_ONLY, mRenderThread.renderState());
     prepareTree(info, frameInfo, systemTime(CLOCK_MONOTONIC));
