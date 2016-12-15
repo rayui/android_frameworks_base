@@ -17,7 +17,6 @@
 package com.android.tools.layoutlib.create;
 
 import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
@@ -41,7 +40,6 @@ public class DelegateClassAdapter extends ClassVisitor {
     private final String mClassName;
     private final Set<String> mDelegateMethods;
     private final Log mLog;
-    private boolean mIsStaticInnerClass;
 
     /**
      * Creates a new {@link DelegateClassAdapter} that can transform some methods
@@ -64,30 +62,16 @@ public class DelegateClassAdapter extends ClassVisitor {
         mLog = log;
         mClassName = className;
         mDelegateMethods = delegateMethods;
-        // If this is an inner class, by default, we assume it's static. If it's not we will detect
-        // by looking at the fields (see visitField)
-        mIsStaticInnerClass = className.contains("$");
     }
 
     //----------------------------------
     // Methods from the ClassAdapter
 
     @Override
-    public FieldVisitor visitField(int access, String name, String desc, String signature,
-            Object value) {
-        if (mIsStaticInnerClass && "this$0".equals(name)) {
-            // Having a "this$0" field, proves that this class is not a static inner class.
-            mIsStaticInnerClass = false;
-        }
-
-        return super.visitField(access, name, desc, signature, value);
-    }
-
-    @Override
     public MethodVisitor visitMethod(int access, String name, String desc,
             String signature, String[] exceptions) {
 
-        boolean isStaticMethod = (access & Opcodes.ACC_STATIC) != 0;
+        boolean isStatic = (access & Opcodes.ACC_STATIC) != 0;
         boolean isNative = (access & Opcodes.ACC_NATIVE) != 0;
 
         boolean useDelegate = (isNative && mDelegateMethods.contains(ALL_NATIVES)) ||
@@ -112,8 +96,7 @@ public class DelegateClassAdapter extends ClassVisitor {
             MethodVisitor mwDelegate = super.visitMethod(access, name, desc, signature, exceptions);
 
             DelegateMethodAdapter a = new DelegateMethodAdapter(
-                    mLog, null, mwDelegate, mClassName, name, desc, isStaticMethod,
-                    mIsStaticInnerClass);
+                    mLog, null, mwDelegate, mClassName, name, desc, isStatic);
 
             // A native has no code to visit, so we need to generate it directly.
             a.generateDelegateCode();
@@ -137,7 +120,6 @@ public class DelegateClassAdapter extends ClassVisitor {
                                                      desc, signature, exceptions);
 
         return new DelegateMethodAdapter(
-                mLog, mwOriginal, mwDelegate, mClassName, name, desc, isStaticMethod,
-                mIsStaticInnerClass);
+                mLog, mwOriginal, mwDelegate, mClassName, name, desc, isStatic);
     }
 }
