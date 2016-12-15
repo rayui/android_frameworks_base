@@ -37471,7 +37471,6 @@ package android.view {
     field public static final int KEYCODE_NAVIGATE_NEXT = 261; // 0x105
     field public static final int KEYCODE_NAVIGATE_OUT = 263; // 0x107
     field public static final int KEYCODE_NAVIGATE_PREVIOUS = 260; // 0x104
-    field public static final int KEYCODE_NETFLIX = 1001; // 0x3e9
     field public static final int KEYCODE_NOTIFICATION = 83; // 0x53
     field public static final int KEYCODE_NUM = 78; // 0x4e
     field public static final int KEYCODE_NUMPAD_0 = 144; // 0x90
@@ -47755,10 +47754,7 @@ package java.lang.reflect {
   }
 
   public final class Constructor extends java.lang.reflect.AccessibleObject implements java.lang.reflect.GenericDeclaration java.lang.reflect.Member {
-    method public boolean equals(java.lang.Object);
     method public A getAnnotation(java.lang.Class<A>);
-    method public java.lang.annotation.Annotation[] getAnnotations();
-    method public java.lang.annotation.Annotation[] getDeclaredAnnotations();
     method public java.lang.Class<T> getDeclaringClass();
     method public java.lang.Class<?>[] getExceptionTypes();
     method public java.lang.reflect.Type[] getGenericExceptionTypes();
@@ -47768,7 +47764,6 @@ package java.lang.reflect {
     method public java.lang.annotation.Annotation[][] getParameterAnnotations();
     method public java.lang.Class<?>[] getParameterTypes();
     method public java.lang.reflect.TypeVariable<java.lang.reflect.Constructor<T>>[] getTypeParameters();
-    method public boolean isAnnotationPresent(java.lang.Class<? extends java.lang.annotation.Annotation>);
     method public boolean isSynthetic();
     method public boolean isVarArgs();
     method public T newInstance(java.lang.Object...) throws java.lang.IllegalAccessException, java.lang.IllegalArgumentException, java.lang.InstantiationException, java.lang.reflect.InvocationTargetException;
@@ -47842,10 +47837,7 @@ package java.lang.reflect {
   }
 
   public final class Method extends java.lang.reflect.AccessibleObject implements java.lang.reflect.GenericDeclaration java.lang.reflect.Member {
-    method public boolean equals(java.lang.Object);
     method public A getAnnotation(java.lang.Class<A>);
-    method public java.lang.annotation.Annotation[] getAnnotations();
-    method public java.lang.annotation.Annotation[] getDeclaredAnnotations();
     method public java.lang.Class<?> getDeclaringClass();
     method public java.lang.Object getDefaultValue();
     method public java.lang.Class<?>[] getExceptionTypes();
@@ -47859,7 +47851,6 @@ package java.lang.reflect {
     method public java.lang.Class<?> getReturnType();
     method public java.lang.reflect.TypeVariable<java.lang.reflect.Method>[] getTypeParameters();
     method public java.lang.Object invoke(java.lang.Object, java.lang.Object...) throws java.lang.IllegalAccessException, java.lang.IllegalArgumentException, java.lang.reflect.InvocationTargetException;
-    method public boolean isAnnotationPresent(java.lang.Class<? extends java.lang.annotation.Annotation>);
     method public boolean isBridge();
     method public boolean isSynthetic();
     method public boolean isVarArgs();
