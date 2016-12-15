@@ -480,10 +480,8 @@ public class Paint_Delegate {
             return;
         }
 
-        if (delegate.mTextSize != textSize) {
-            delegate.mTextSize = textSize;
-            delegate.updateFontObject();
-        }
+        delegate.mTextSize = textSize;
+        delegate.updateFontObject();
     }
 
     @LayoutlibDelegate
@@ -505,10 +503,8 @@ public class Paint_Delegate {
             return;
         }
 
-        if (delegate.mTextScaleX != scaleX) {
-            delegate.mTextScaleX = scaleX;
-            delegate.updateFontObject();
-        }
+        delegate.mTextScaleX = scaleX;
+        delegate.updateFontObject();
     }
 
     @LayoutlibDelegate
@@ -530,10 +526,8 @@ public class Paint_Delegate {
             return;
         }
 
-        if (delegate.mTextSkewX != skewX) {
-            delegate.mTextSkewX = skewX;
-            delegate.updateFontObject();
-        }
+        delegate.mTextSkewX = skewX;
+        delegate.updateFontObject();
     }
 
     @LayoutlibDelegate
@@ -903,12 +897,9 @@ public class Paint_Delegate {
             return 0;
         }
 
-        Typeface_Delegate typefaceDelegate = Typeface_Delegate.getDelegate(typeface);
-        if (delegate.mTypeface != typefaceDelegate || delegate.mNativeTypeface != typeface) {
-            delegate.mTypeface = Typeface_Delegate.getDelegate(typeface);
-            delegate.mNativeTypeface = typeface;
-            delegate.updateFontObject();
-        }
+        delegate.mTypeface = Typeface_Delegate.getDelegate(typeface);
+        delegate.mNativeTypeface = typeface;
+        delegate.updateFontObject();
         return typeface;
     }
 
@@ -1223,31 +1214,13 @@ public class Paint_Delegate {
         mCap = paint.mCap;
         mJoin = paint.mJoin;
         mTextAlign = paint.mTextAlign;
-
-        boolean needsFontUpdate = false;
-        if (mTypeface != paint.mTypeface || mNativeTypeface != paint.mNativeTypeface) {
-            mTypeface = paint.mTypeface;
-            mNativeTypeface = paint.mNativeTypeface;
-            needsFontUpdate = true;
-        }
-
-        if (mTextSize != paint.mTextSize) {
-            mTextSize = paint.mTextSize;
-            needsFontUpdate = true;
-        }
-
-        if (mTextScaleX != paint.mTextScaleX) {
-            mTextScaleX = paint.mTextScaleX;
-            needsFontUpdate = true;
-        }
-
-        if (mTextSkewX != paint.mTextSkewX) {
-            mTextSkewX = paint.mTextSkewX;
-            needsFontUpdate = true;
-        }
-
+        mTypeface = paint.mTypeface;
+        mNativeTypeface = paint.mNativeTypeface;
         mStrokeWidth = paint.mStrokeWidth;
         mStrokeMiter = paint.mStrokeMiter;
+        mTextSize = paint.mTextSize;
+        mTextScaleX = paint.mTextScaleX;
+        mTextSkewX = paint.mTextSkewX;
         mXfermode = paint.mXfermode;
         mColorFilter = paint.mColorFilter;
         mShader = paint.mShader;
@@ -1255,10 +1228,7 @@ public class Paint_Delegate {
         mMaskFilter = paint.mMaskFilter;
         mRasterizer = paint.mRasterizer;
         mHintingMode = paint.mHintingMode;
-
-        if (needsFontUpdate) {
-            updateFontObject();
-        }
+        updateFontObject();
     }
 
     private void reset() {
@@ -1294,18 +1264,10 @@ public class Paint_Delegate {
             // Get the fonts from the TypeFace object.
             List<Font> fonts = mTypeface.getFonts(mFontVariant);
 
-            if (fonts.isEmpty()) {
-                mFonts = Collections.emptyList();
-                return;
-            }
-
             // create new font objects as well as FontMetrics, based on the current text size
             // and skew info.
-            int nFonts = fonts.size();
-            ArrayList<FontInfo> infoList = new ArrayList<FontInfo>(nFonts);
-            //noinspection ForLoopReplaceableByForEach (avoid iterator instantiation)
-            for (int i = 0; i < nFonts; i++) {
-                Font font = fonts.get(i);
+            ArrayList<FontInfo> infoList = new ArrayList<FontInfo>(fonts.size());
+            for (Font font : fonts) {
                 if (font == null) {
                     // If the font is null, add null to infoList. When rendering the text, if this
                     // null is reached, a warning will be logged.

@@ -178,9 +178,7 @@ public class FontFamily_Delegate {
         desiredStyle.mIsItalic = isItalic;
         FontInfo bestFont = null;
         int bestMatch = Integer.MAX_VALUE;
-        //noinspection ForLoopReplaceableByForEach (avoid iterator instantiation)
-        for (int i = 0, n = mFonts.size(); i < n; i++) {
-            FontInfo font = mFonts.get(i);
+        for (FontInfo font : mFonts) {
             int match = computeMatch(font, desiredStyle);
             if (match < bestMatch) {
                 bestMatch = match;
@@ -417,9 +415,7 @@ public class FontFamily_Delegate {
         boolean isItalic = fontInfo.mIsItalic;
         // The list is usually just two fonts big. So iterating over all isn't as bad as it looks.
         // It's biggest for roboto where the size is 12.
-        //noinspection ForLoopReplaceableByForEach (avoid iterator instantiation)
-        for (int i = 0, n = mFonts.size(); i < n; i++) {
-            FontInfo font = mFonts.get(i);
+        for (FontInfo font : mFonts) {
             if (font.mWeight == weight && font.mIsItalic == isItalic) {
                 return false;
             }
