@@ -59,7 +59,6 @@ import java.util.Set;
             if (opts.inPremultiplied) {
                 bitmapCreateFlags.add(BitmapCreateFlags.PREMULTIPLIED);
             }
-            opts.inScaled = false;
         }
 
         try {
