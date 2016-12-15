@@ -7677,7 +7677,22 @@ public class WindowManagerService extends IWindowManager.Stub
             final DisplayContent displayContent = getDisplayContentLocked(displayId);
             if (displayContent != null) {
                 mAnimator.addDisplayLocked(displayId);
-                displayContent.initializeDisplayBaseInfo();
+                synchronized(displayContent.mDisplaySizeLock) {
+                    // Bootstrap the default logical display from the display manager.
+                    final DisplayInfo displayInfo = displayContent.getDisplayInfo();
+                    DisplayInfo newDisplayInfo = mDisplayManagerInternal.getDisplayInfo(displayId);
+                    if (newDisplayInfo != null) {
+                        displayInfo.copyFrom(newDisplayInfo);
+                    }
+                    displayContent.mInitialDisplayWidth = displayInfo.logicalWidth;
+                    displayContent.mInitialDisplayHeight = displayInfo.logicalHeight;
+                    displayContent.mInitialDisplayDensity = displayInfo.logicalDensityDpi;
+                    displayContent.mBaseDisplayWidth = displayContent.mInitialDisplayWidth;
+                    displayContent.mBaseDisplayHeight = displayContent.mInitialDisplayHeight;
+                    displayContent.mBaseDisplayDensity = displayContent.mInitialDisplayDensity;
+                    displayContent.mBaseDisplayRect.set(0, 0,
+                            displayContent.mBaseDisplayWidth, displayContent.mBaseDisplayHeight);
+                }
             }
         }
     }
