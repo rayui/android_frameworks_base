@@ -415,7 +415,8 @@ public class ZenModeHelper {
         applyRestrictions(muteNotifications, USAGE_NOTIFICATION);
 
         // call restrictions
-        final boolean muteCalls = zen && !mConfig.allowCalls && !mConfig.allowRepeatCallers;
+        final boolean muteCalls = zen && !mConfig.allowCalls && !mConfig.allowRepeatCallers
+                || mEffectsSuppressed;
         applyRestrictions(muteCalls, USAGE_NOTIFICATION_RINGTONE);
 
         // alarm restrictions
