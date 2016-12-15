@@ -48,6 +48,9 @@ import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.util.Iterator;
 
+/**
+ *
+ */
 public final class BridgeResources extends Resources {
 
     private BridgeContext mContext;
@@ -275,7 +278,7 @@ public final class BridgeResources extends Resources {
      * always Strings. The ideal signature for the method should be &lt;T super String&gt;, but java
      * generics don't support it.
      */
-    <T extends CharSequence> T[] fillValues(ArrayResourceValue resValue, T[] values) {
+    private <T extends CharSequence> T[] fillValues(ArrayResourceValue resValue, T[] values) {
         int i = 0;
         for (Iterator<String> iterator = resValue.iterator(); iterator.hasNext(); i++) {
             @SuppressWarnings("unchecked")

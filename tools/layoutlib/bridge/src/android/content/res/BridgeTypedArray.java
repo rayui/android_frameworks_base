@@ -16,7 +16,6 @@
 
 package android.content.res;
 
-import com.android.ide.common.rendering.api.ArrayResourceValue;
 import com.android.ide.common.rendering.api.AttrResourceValue;
 import com.android.ide.common.rendering.api.LayoutLog;
 import com.android.ide.common.rendering.api.RenderResources;
@@ -34,7 +33,6 @@ import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 
 import android.annotation.Nullable;
-import android.content.res.Resources.NotFoundException;
 import android.content.res.Resources.Theme;
 import android.graphics.drawable.Drawable;
 import android.util.DisplayMetrics;
@@ -742,20 +740,12 @@ public final class BridgeTypedArray extends TypedArray {
      */
     @Override
     public CharSequence[] getTextArray(int index) {
-        if (!hasValue(index)) {
-            return null;
+        String value = getString(index);
+        if (value != null) {
+            return new CharSequence[] { value };
         }
-        ResourceValue resVal = mResourceData[index];
-        if (resVal instanceof ArrayResourceValue) {
-            ArrayResourceValue array = (ArrayResourceValue) resVal;
-            int count = array.getElementCount();
-            return count >= 0 ? mBridgeResources.fillValues(array, new CharSequence[count]) : null;
-        }
-        int id = getResourceId(index, 0);
-        String resIdMessage = id > 0 ? " (resource id 0x" + Integer.toHexString(id) + ')' : "";
-        throw new NotFoundException(
-                String.format("%1$s in %2$s%3$s is not a valid array resource.",
-                        resVal.getValue(), mNames[index], resIdMessage));
+
+        return null;
     }
 
     @Override
