@@ -36,7 +36,6 @@ import java.awt.geom.PathIterator;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.geom.RoundRectangle2D;
-import java.util.ArrayList;
 
 /**
  * Delegate implementing the native methods of android.graphics.Path
@@ -174,8 +173,11 @@ public final class Path_Delegate {
     @LayoutlibDelegate
     /*package*/ static boolean native_isEmpty(long nPath) {
         Path_Delegate pathDelegate = sManager.getDelegate(nPath);
-        return pathDelegate == null || pathDelegate.isEmpty();
+        if (pathDelegate == null) {
+            return true;
+        }
 
+        return pathDelegate.isEmpty();
     }
 
     @LayoutlibDelegate
@@ -486,44 +488,54 @@ public final class Path_Delegate {
 
     @LayoutlibDelegate
     /*package*/ static float[] native_approximate(long nPath, float error) {
+        Bridge.getLog().warning(LayoutLog.TAG_UNSUPPORTED, "Path.approximate() not fully supported",
+                null);
         Path_Delegate pathDelegate = sManager.getDelegate(nPath);
         if (pathDelegate == null) {
             return null;
         }
-        // Get a FlatteningIterator
-        PathIterator iterator = pathDelegate.getJavaShape().getPathIterator(null, error);
-
-        float segment[] = new float[6];
-        float totalLength = 0;
-        ArrayList<Point2D.Float> points = new ArrayList<Point2D.Float>();
-        Point2D.Float previousPoint = null;
-        while (!iterator.isDone()) {
-            int type = iterator.currentSegment(segment);
-            Point2D.Float currentPoint = new Point2D.Float(segment[0], segment[1]);
-            // MoveTo shouldn't affect the length
-            if (previousPoint != null && type != PathIterator.SEG_MOVETO) {
-                totalLength += currentPoint.distance(previousPoint);
+        PathIterator pathIterator = pathDelegate.mPath.getPathIterator(null);
+        float[] tmp = new float[6];
+        float[] coords = new float[6];
+        boolean isFirstPoint = true;
+        while (!pathIterator.isDone()) {
+            int type = pathIterator.currentSegment(tmp);
+            switch (type) {
+                case PathIterator.SEG_MOVETO:
+                case PathIterator.SEG_LINETO:
+                    store(tmp, coords, 1, isFirstPoint);
+                    break;
+                case PathIterator.SEG_QUADTO:
+                    store(tmp, coords, 2, isFirstPoint);
+                    break;
+                case PathIterator.SEG_CUBICTO:
+                    store(tmp, coords, 3, isFirstPoint);
+                    break;
+                case PathIterator.SEG_CLOSE:
+                    // No points returned.
             }
-            previousPoint = currentPoint;
-            points.add(currentPoint);
-            iterator.next();
+            isFirstPoint = false;
+            pathIterator.next();
         }
-
-        int nPoints = points.size();
-        float[] result = new float[nPoints * 3];
-        previousPoint = null;
-        for (int i = 0; i < nPoints; i++) {
-            Point2D.Float point = points.get(i);
-            float distance = previousPoint != null ? (float) previousPoint.distance(point) : .0f;
-            result[i * 3] = distance / totalLength;
-            result[i * 3 + 1] = point.x;
-            result[i * 3 + 2] = point.y;
-
-            totalLength += distance;
-            previousPoint = point;
+        if (isFirstPoint) {
+            // No points found
+            return new float[0];
+        } else {
+            return coords;
         }
+    }
 
-        return result;
+    private static void store(float[] src, float[] dst, int count, boolean isFirst) {
+        if (isFirst) {
+            dst[0] = 0;       // fraction
+            dst[1] = src[0];  // abscissa
+            dst[2] = src[1];  // ordinate
+        }
+        if (count > 1 || !isFirst) {
+            dst[3] = 1;
+            dst[4] = src[2 * count - 2];
+            dst[5] = src[2 * count - 1];
+        }
     }
 
     // ---- Private helper methods ----
@@ -723,9 +735,6 @@ public final class Path_Delegate {
      */
     private void cubicTo(float x1, float y1, float x2, float y2,
                         float x3, float y3) {
-        if (isEmpty()) {
-            mPath.moveTo(0, 0);
-        }
         mPath.curveTo(x1, y1, x2, y2, mLastX = x3, mLastY = y3);
     }
 
