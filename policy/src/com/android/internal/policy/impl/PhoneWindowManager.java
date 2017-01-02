@@ -197,6 +197,22 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                 KeyEvent.KEYCODE_CALCULATOR, Intent.CATEGORY_APP_CALCULATOR);
     }
 
+    /* Table of Application shortcuts.
+     */
+
+    static SparseArray<Intent> sApplicationShortcutTable;
+    static {
+        sApplicationShortcutTable = new SparseArray<Intent>();
+        sApplicationShortcutTable.append(
+                KeyEvent.KEYCODE_F7, null);
+        sApplicationShortcutTable.append(
+                KeyEvent.KEYCODE_F8, null);
+        sApplicationShortcutTable.append(
+                KeyEvent.KEYCODE_F9, null);
+        sApplicationShortcutTable.append(
+                KeyEvent.KEYCODE_F10, null);
+    }
+
     /**
      * Lock protecting internal state.  Must not call out into window
      * manager with lock held.  (This lock will be acquired in places
@@ -2253,6 +2269,22 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                     Slog.w(TAG, "Dropping application launch key because "
                             + "the activity to which it is registered was not found: "
                             + "keyCode=" + keyCode + ", category=" + category, ex);
+                }
+                return -1;
+            }
+        }
+
+        // Setted Shortcut keys.
+        if (down && !keyguardOn) {
+            Intent intent = sApplicationShortcutTable.get(keyCode);
+            if (intent != null) {
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                try {
+                    mContext.startActivityAsUser(intent, UserHandle.CURRENT);
+                } catch (ActivityNotFoundException ex) {
+                    Slog.w(TAG, "Dropping application launch key because "
+                            + "the activity to which it is registered was not found: "
+                            + "keyCode= " + keyCode + ", app = " + intent.getPackage(), ex);
                 }
                 return -1;
             }
@@ -5453,5 +5485,30 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         pw.print(prefix); pw.print("mUndockedHdmiRotation="); pw.println(mUndockedHdmiRotation);
         mStatusBarController.dump(pw, prefix);
         mNavigationBarController.dump(pw, prefix);
+    }
+
+    /*
+     * Set the shortcut of application. appIntent could be the null.
+     */
+    public void setApplicationShortcut (int keyCode, Intent appIntent) {
+        if (KeyEvent.KEYCODE_F7 <= keyCode &&
+                keyCode <= KeyEvent.KEYCODE_F10) {
+            sApplicationShortcutTable.put(keyCode, appIntent);
+        } else {
+            Slog.w(TAG, "Shortcut mapping key should F7 ~ F10 " +
+                    "received keyCode= " + keyCode);
+        }
+    }
+
+    public String getApplicationOfShortcutAt (int keyCode) {
+        if (KeyEvent.KEYCODE_F7 <= keyCode &&
+                keyCode <= KeyEvent.KEYCODE_F10) {
+            Intent intent = sApplicationShortcutTable.get(keyCode);
+            if (intent == null)
+                return "";
+            else
+                return intent.getPackage();
+        }
+        return null;
     }
 }

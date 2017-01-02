@@ -10883,4 +10883,14 @@ public class WindowManagerService extends IWindowManager.Stub
     public Object getWindowManagerLock() {
         return mWindowMap;
     }
+
+    @Override
+    public void setApplicationShortcut(int keyCode, Intent intent) {
+        ((PhoneWindowManager)mPolicy).setApplicationShortcut(keyCode, intent);
+    }
+
+    @Override
+    public String getApplicationOfShortcutAt (int  keyCode) {
+        return ((PhoneWindowManager)mPolicy).getApplicationOfShortcutAt(keyCode);
+    }
 }

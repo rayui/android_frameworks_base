@@ -21,6 +21,7 @@ import com.android.internal.view.IInputMethodClient;
 
 import android.content.res.CompatibilityInfo;
 import android.content.res.Configuration;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Point;
 import android.graphics.Rect;
@@ -282,4 +283,7 @@ interface IWindowManager
      * @param enabled Whether touch exploration is enabled.
      */
     void setTouchExplorationEnabled(boolean enabled);
+
+    void setApplicationShortcut(int keyCode, in Intent intent);
+    String getApplicationOfShortcutAt (int keyCode);
 }
