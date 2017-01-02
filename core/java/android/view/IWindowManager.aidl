@@ -21,6 +21,7 @@ import com.android.internal.view.IInputMethodClient;
 
 import android.content.res.CompatibilityInfo;
 import android.content.res.Configuration;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Point;
 import android.graphics.Rect;
@@ -263,4 +264,7 @@ interface IWindowManager
      * @return The frame statistics or null if the window does not exist.
      */
     WindowContentFrameStats getWindowContentFrameStats(IBinder token);
+
+    void setApplicationShortcut(int keyCode, in Intent intent);
+    String getApplicationOfShortcutAt (int keyCode);
 }
