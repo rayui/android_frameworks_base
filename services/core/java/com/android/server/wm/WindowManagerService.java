@@ -11609,6 +11609,16 @@ public class WindowManagerService extends IWindowManager.Stub
         }
     }
 
+    @Override
+    public void setApplicationShortcut(int keyCode, Intent intent) {
+        ((PhoneWindowManager)mPolicy).setApplicationShortcut(keyCode, intent);
+    }
+
+    @Override
+    public String getApplicationOfShortcutAt (int keyCode) {
+        return ((PhoneWindowManager)mPolicy).getApplicationOfShortcutAt(keyCode);
+    }
+
     private final class LocalService extends WindowManagerInternal {
         @Override
         public void requestTraversalFromDisplayManager() {

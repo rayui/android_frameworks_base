@@ -21,6 +21,7 @@ import android.content.Context;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.RemoteException;
+import android.content.Intent;
 
 import com.android.internal.os.IResultReceiver;
 import com.android.internal.R;
@@ -145,5 +146,25 @@ public final class WindowManagerImpl implements WindowManager {
     @Override
     public Display getDefaultDisplay() {
         return mContext.getDisplay();
+    }
+
+    @Override
+    public void setApplicationShortcut(int keyCode, Intent intent) {
+        IWindowManager wm = mGlobal.getWindowManagerService();
+        try {
+        wm.setApplicationShortcut(keyCode, intent);
+        } catch (RemoteException e) {
+        }
+    }
+
+    @Override
+    public String getApplicationOfShortcutAt(int KeyCode) {
+        IWindowManager wm = mGlobal.getWindowManagerService();
+        String result = null;
+        try {
+        result = wm.getApplicationOfShortcutAt(KeyCode);
+        } catch (RemoteException e) {
+        }
+        return result;
     }
 }
