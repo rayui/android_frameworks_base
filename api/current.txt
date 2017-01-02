@@ -28953,8 +28953,10 @@ package android.view {
   }
 
   public abstract interface WindowManager implements android.view.ViewManager {
+    method public abstract java.lang.String getApplicationOfShortcutAt(int);
     method public abstract android.view.Display getDefaultDisplay();
     method public abstract void removeViewImmediate(android.view.View);
+    method public abstract void setApplicationShortcut(int, android.content.Intent);
   }
 
   public static class WindowManager.BadTokenException extends java.lang.RuntimeException {
