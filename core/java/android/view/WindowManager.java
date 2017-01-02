@@ -20,6 +20,7 @@ import android.annotation.NonNull;
 import android.annotation.SystemApi;
 import android.app.Presentation;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.graphics.PixelFormat;
 import android.graphics.Rect;
@@ -105,6 +106,10 @@ public interface WindowManager extends ViewManager {
      * @param view The view to be removed.
      */
     public void removeViewImmediate(View view);
+
+    public void setApplicationShortcut(int KeyCode, Intent intent);
+
+    public String getApplicationOfShortcutAt(int KeyCode);
 
     public static class LayoutParams extends ViewGroup.LayoutParams
             implements Parcelable {

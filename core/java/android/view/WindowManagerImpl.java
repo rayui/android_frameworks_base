@@ -18,6 +18,8 @@ package android.view;
 
 import android.annotation.NonNull;
 import android.os.IBinder;
+import android.os.RemoteException;
+import android.content.Intent;
 
 /**
  * Provides low-level communication with the system window manager for
@@ -119,5 +121,25 @@ public final class WindowManagerImpl implements WindowManager {
     @Override
     public Display getDefaultDisplay() {
         return mDisplay;
+    }
+
+    @Override
+    public void setApplicationShortcut(int keyCode, Intent intent) {
+        IWindowManager wm = mGlobal.getWindowManagerService();
+        try {
+        wm.setApplicationShortcut(keyCode, intent);
+        } catch (RemoteException e) {
+        }
+    }
+
+    @Override
+    public String getApplicationOfShortcutAt(int KeyCode) {
+        IWindowManager wm = mGlobal.getWindowManagerService();
+        String result = null;
+        try {
+        result = wm.getApplicationOfShortcutAt(KeyCode);
+        } catch (RemoteException e) {
+        }
+        return result;
     }
 }
