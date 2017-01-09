@@ -194,6 +194,10 @@
     <!-- Label for the installer CD image option in UsbPreferenceActivity. [CHAR LIMIT=50] -->
     <string name="installer_cd_button_title">Install Android File Transfer app for Mac</string>
 
+    <!-- Content description of the Volume Up button for accessibility (not shown on the screen). [CHAR LIMIT=NONE] -->
+    <string name="accessibility_vol_up">Volume Up</string>
+    <!-- Content description of the Volume Down button for accessibility (not shown on the screen). [CHAR LIMIT=NONE] -->
+    <string name="accessibility_vol_down">Volume Dowwn</string>
     <!-- Content description of the back button for accessibility (not shown on the screen). [CHAR LIMIT=NONE] -->
     <string name="accessibility_back">Back</string>
     <!-- Content description of the home button for accessibility (not shown on the screen). [CHAR LIMIT=NONE] -->
@@ -210,6 +214,10 @@
     <string name="accessibility_phone_button">Phone</string>
     <!-- Content description of the unlock button for accessibility (not shown on the screen). [CHAR LIMIT=NONE] -->
     <string name="accessibility_unlock_button">Unlock</string>
+    <!-- Content description of the shutdown button for accessibility (not shown on the screen). [CHAR LIMIT=NONE] -->
+    <string name="accessibility_shutdown">Shutdown</string>
+    <!-- Content description of the screenshot button for accessibility (not shown on the screen). [CHAR LIMIT=NONE] -->
+    <string name="accessibility_screenshot">Screenshot</string>
     <!-- Click action label for accessibility for the unlock button. [CHAR LIMIT=NONE] -->
     <string name="unlock_label">unlock</string>
     <!-- Click action label for accessibility for the phone button. [CHAR LIMIT=NONE] -->
