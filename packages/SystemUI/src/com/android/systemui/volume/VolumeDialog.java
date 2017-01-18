@@ -27,7 +27,6 @@ import android.annotation.SuppressLint;
 import android.app.Dialog;
 import android.app.KeyguardManager;
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.content.res.Resources;
 import android.graphics.Color;
@@ -171,9 +170,6 @@ public class VolumeDialog {
         mDialogContentView = (ViewGroup) mDialog.findViewById(R.id.volume_dialog_content);
         mExpandButton = (ImageButton) mDialogView.findViewById(R.id.volume_expand_button);
         mExpandButton.setOnClickListener(mClickExpand);
-        if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_LIVE_TV)) {
-            Util.setVisOrGone(mExpandButton, false);
-        }
         updateWindowWidthH();
         updateExpandButtonH();
         mLayoutTransition = new LayoutTransition();
