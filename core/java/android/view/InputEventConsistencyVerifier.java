@@ -687,7 +687,9 @@ public final class InputEventConsistencyVerifier {
                     }
                 }
 
+/* Deprecated for ODROID
                 Log.d(mLogTag, mViolationMessage.toString());
+*/
 
                 // Taint the event so that we do not generate additional violations from it
                 // further downstream.
