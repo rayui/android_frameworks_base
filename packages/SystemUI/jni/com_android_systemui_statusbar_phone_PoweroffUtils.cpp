@@ -3,15 +3,26 @@
 #include <utils/Log.h>
 #include <stdio.h>
 #include <string.h>
+#include <dirent.h>
 
-#define POWEROFF_NODE   "/sys/devices/odroid_sysfs.15/poweroff_trigger"
 #define LOG_TAG "PowerOff-JNI"
 
 namespace android {
 
 static void native_Poweroff(JNIEnv* env, jobject obj) {
     FILE *fp = NULL;
-    fp = fopen(POWEROFF_NODE, "w");
+    DIR *dp = NULL;
+    struct dirent *ep = NULL;
+    char fullpath[64] = {'\0',};
+    dp = opendir("/sys/devices/");
+    if (dp != NULL) {
+        while (ep = readdir(dp)) {
+            if (strncmp(ep->d_name, "odroid_sysfs.", 13) == 0) {
+                sprintf(fullpath, "/sys/devices/%s/poweroff_trigger", ep->d_name);
+                fp = fopen(fullpath, "w");
+            }
+        }
+    }
 
     if (fp == NULL) {
         return;
