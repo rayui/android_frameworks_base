@@ -2785,10 +2785,13 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             }
         }
 
-        // Setted Shortcut keys.
+        // Set Shortcut keys.
         if (down && !keyguardOn) {
             Intent intent = sApplicationShortcutTable.get(keyCode);
             if (intent != null) {
+                if (intent.getPackage().equals("home")) {
+                    launchHomeFromHotKey();
+                }
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 try {
                     startActivityAsUser(intent, UserHandle.CURRENT);
