@@ -750,6 +750,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     private static final int MSG_BACK_LONG_PRESS = 18;
     private static final int MSG_DISPOSE_INPUT_CONSUMER = 19;
     private static final int MSG_BACK_DELAYED_PRESS = 20;
+    private static final int MSG_POWER_LONG_LONG_PRESS = 21;
 
     private static final int MSG_REQUEST_TRANSIENT_BARS_ARG_STATUS = 0;
     private static final int MSG_REQUEST_TRANSIENT_BARS_ARG_NAVIGATION = 1;
@@ -824,6 +825,9 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                 case MSG_BACK_DELAYED_PRESS:
                     backMultiPressAction((Long) msg.obj, msg.arg1);
                     finishBackKeyPress();
+                    break;
+                case MSG_POWER_LONG_LONG_PRESS:
+                    powerLongLongPress();
                     break;
             }
         }
@@ -1179,6 +1183,11 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                     msg.setAsynchronous(true);
                     mHandler.sendMessageDelayed(msg,
                             ViewConfiguration.get(mContext).getDeviceGlobalActionKeyTimeout());
+
+                    Message msg2 = mHandler.obtainMessage(MSG_POWER_LONG_LONG_PRESS);
+                    msg2.setAsynchronous(true);
+                    mHandler.sendMessageDelayed(msg2,
+                            ViewConfiguration.get(mContext).getDeviceGlobalActionKeyTimeout() * 10);
                 }
             } else {
                 wakeUpFromPowerKey(event.getDownTime());
@@ -1188,6 +1197,12 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                     msg.setAsynchronous(true);
                     mHandler.sendMessageDelayed(msg,
                             ViewConfiguration.get(mContext).getDeviceGlobalActionKeyTimeout());
+
+                    Message msg2 = mHandler.obtainMessage(MSG_POWER_LONG_LONG_PRESS);
+                    msg2.setAsynchronous(true);
+                    mHandler.sendMessageDelayed(msg2,
+                            ViewConfiguration.get(mContext).getDeviceGlobalActionKeyTimeout() * 10);
+
                     mBeganFromNonInteractive = true;
                 } else {
                     final int maxCount = getMaxMultiPressPowerCount();
@@ -1208,6 +1223,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         cancelPendingScreenshotChordAction();
         cancelPendingPowerKeyAction();
 
+        mHandler.removeMessages(MSG_POWER_LONG_LONG_PRESS);
         if (!handled) {
             // Figure out how to handle the key now that it has been released.
             mPowerKeyPressCounter += 1;
@@ -1399,6 +1415,13 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         if (inputConsumer != null) {
             inputConsumer.dismiss();
         }
+    }
+
+    private void powerLongLongPress() {
+        mPowerKeyHandled = true;
+        performHapticFeedbackLw(null, HapticFeedbackConstants.LONG_PRESS, false);
+        sendCloseSystemWindows(SYSTEM_DIALOG_REASON_GLOBAL_ACTIONS);
+        mWindowManagerFuncs.shutdown(false);
     }
 
     private void sleepPress(long eventTime) {
