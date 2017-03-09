@@ -183,7 +183,10 @@
     <string name="use_ptp_button_title">Mount as a camera (PTP)</string>
     <!-- Label for the installer CD image option in UsbPreferenceActivity. [CHAR LIMIT=50] -->
     <string name="installer_cd_button_title">Install Android File Transfer app for Mac</string>
-
+    <!-- Content description of the Volume Up button for accessibility (not shown on the screen). [CHAR LIMIT=NONE] -->
+    <string name="accessibility_vol_up">Volume Up</string>
+    <!-- Content description of the Volume Down button for accessibility (not shown on the screen). [CHAR LIMIT=NONE] -->
+    <string name="accessibility_vol_down">Volume Dowwn</string>
     <!-- Content description of the back button for accessibility (not shown on the screen). [CHAR LIMIT=NONE] -->
     <string name="accessibility_back">Back</string>
     <!-- Content description of the home button for accessibility (not shown on the screen). [CHAR LIMIT=NONE] -->
@@ -196,7 +199,10 @@
     <string name="accessibility_search_light">Search</string>
     <!-- Content description of the camera button for accessibility (not shown on the screen). [CHAR LIMIT=NONE] -->
     <string name="accessibility_camera_button">Camera</string>
-
+    <!-- Content description of the shutdown button for accessibility (not shown on the screen). [CHAR LIMIT=NONE] -->
+    <string name="accessibility_shutdown">Shutdown</string>
+    <!-- Content description of the screenshot button for accessibility (not shown on the screen). [CHAR LIMIT=NONE] -->
+    <string name="accessibility_screenshot">Screenshot</string>
     <!-- Content description of the switch input method button for accessibility (not shown on the screen). [CHAR LIMIT=NONE] -->
     <string name="accessibility_ime_switch_button">Switch input method button.</string>
     <!-- Content description of the compatibility zoom button for accessibility (not shown on the screen). [CHAR LIMIT=NONE] -->
