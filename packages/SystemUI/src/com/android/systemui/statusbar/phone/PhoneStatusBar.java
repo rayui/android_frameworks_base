@@ -1322,6 +1322,14 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
         prepareNavigationBarView();
 
         mWindowManager.updateViewLayout(mNavigationBarView, getNavigationBarLayoutParams());
+
+        if (mNavigationBarView.getWidth() <= 480) {
+            mNavigationBarView.getVolUpButton().setVisibility(View.GONE);
+            mNavigationBarView.getVolDownButton().setVisibility(View.GONE);
+            mNavigationBarView.getVolUpButton().setVisibility(View.GONE);
+            mNavigationBarView.getShutdownButton().setVisibility(View.GONE);
+            mNavigationBarView.getScreenshotButton().setVisibility(View.GONE);
+        }
     }
 
     private void notifyNavigationBarScreenOn(boolean screenOn) {
