@@ -1213,6 +1213,8 @@
     <string name="storage_sd_card_label" msgid="6347111320774379257">"<xliff:g id="MANUFACTURER">%s</xliff:g> SD 卡"</string>
     <string name="storage_usb_drive" msgid="6261899683292244209">"USB 隨身碟"</string>
     <string name="storage_usb_drive_label" msgid="4501418548927759953">"<xliff:g id="MANUFACTURER">%s</xliff:g> USB 隨身碟"</string>
+    <string name="storage_cdrom">"CD/DVD 光碟機"</string>
+    <string name="storage_cdrom_label">"<xliff:g id="MANUFACTURER">%s</xliff:g> CD/DVD 光碟機"</string>
     <string name="storage_usb" msgid="3017954059538517278">"USB 儲存裝置"</string>
     <string name="data_usage_warning_title" msgid="1955638862122232342">"數據用量警告"</string>
     <string name="data_usage_warning_body" msgid="2814673551471969954">"輕觸即可查看使用量和設定。"</string>
