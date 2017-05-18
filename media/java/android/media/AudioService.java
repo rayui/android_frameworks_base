@@ -488,12 +488,10 @@ public class AudioService extends IAudioService.Stub {
         if(isDigitalFixed()){
             mFixedVolumeDevices = AudioSystem.DEVICE_OUT_AUX_DIGITAL |
                 AudioSystem.DEVICE_OUT_DGTL_DOCK_HEADSET |
-                AudioSystem.DEVICE_OUT_ANLG_DOCK_HEADSET |
-                AudioSystem.DEVICE_OUT_ALL_USB;
+                AudioSystem.DEVICE_OUT_ANLG_DOCK_HEADSET;
         }else{
             mFixedVolumeDevices = AudioSystem.DEVICE_OUT_DGTL_DOCK_HEADSET |
-                AudioSystem.DEVICE_OUT_ANLG_DOCK_HEADSET |
-                AudioSystem.DEVICE_OUT_ALL_USB;
+                AudioSystem.DEVICE_OUT_ANLG_DOCK_HEADSET;
         }
        // Intialized volume
         MAX_STREAM_VOLUME[AudioSystem.STREAM_VOICE_CALL] = SystemProperties.getInt(
