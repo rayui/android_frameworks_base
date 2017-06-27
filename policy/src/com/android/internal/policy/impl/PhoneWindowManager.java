@@ -4943,6 +4943,10 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             wakeUp(whenNanos / 1000000, mAllowTheaterModeWakeFromMotionWhenNotDreaming);
         }
 
+        if (!mPowerManager.isInteractive()) {
+            wakeUp(whenNanos / 1000000, mAllowTheaterModeWakeFromMotion);
+        }
+
         return 0;
     }
 
