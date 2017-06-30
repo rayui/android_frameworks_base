@@ -4176,6 +4176,8 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         if (isWakeMotion) {
             result |= ACTION_WAKE_UP;
         }
+        if (!mPowerManager.isScreenOn())
+            mPowerManager.wakeUp(SystemClock.uptimeMillis());
         return result;
     }
 
