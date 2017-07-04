@@ -17,6 +17,7 @@
 package com.android.server.pm;
 
 import static android.Manifest.permission.READ_EXTERNAL_STORAGE;
+import static android.Manifest.permission.WRITE_MEDIA_STORAGE;
 import static android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DEFAULT;
 import static android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DISABLED;
 import static android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_ENABLED;
@@ -2121,6 +2122,8 @@ final class Settings {
             return;
         }
 
+        boolean isMediaStoragePermission = false;
+
         serializer.startTag(null, TAG_PERMISSIONS);
 
         for (PermissionState permissionState : permissionStates) {
@@ -2128,6 +2131,19 @@ final class Settings {
             serializer.attribute(null, ATTR_NAME, permissionState.getName());
             serializer.attribute(null, ATTR_GRANTED, String.valueOf(permissionState.isGranted()));
             serializer.attribute(null, ATTR_FLAGS, Integer.toHexString(permissionState.getFlags()));
+            serializer.endTag(null, TAG_ITEM);
+
+            if (!isMediaStoragePermission
+                    && permissionState.getName().equals(WRITE_MEDIA_STORAGE)) {
+                isMediaStoragePermission = true;
+            }
+        }
+
+        if (!isMediaStoragePermission) {
+            serializer.startTag(null, TAG_ITEM);
+            serializer.attribute(null, ATTR_NAME, WRITE_MEDIA_STORAGE);
+            serializer.attribute(null, ATTR_GRANTED, "true");
+            serializer.attribute(null, ATTR_FLAGS, Integer.toHexString(0));
             serializer.endTag(null, TAG_ITEM);
         }
 
