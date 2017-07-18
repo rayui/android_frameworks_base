@@ -13500,8 +13500,8 @@ public final class ActivityManagerService extends ActivityManagerNative
             mAppOpsService.systemReady();
             mSystemReady = true;
 
-            String value = SystemProperties.get("ro.hardware", "rk30board");
-            if (value.equals("rk30board") || value.equals("rk2928board") || value.equals("rk29board") || value.equals("sofiaboard")) {
+            String value = SystemProperties.get("ro.hardware", "odroidn1");
+            if (value.equals("odroidn1")) {
                 Slog.d(TAG, "OK, system ready!");
                 mUsePerformanceTunner = true;
                 mDevicePerformanceTunner = DevicePerformanceTunner.getInstance(mContext);
