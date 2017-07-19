@@ -97,15 +97,10 @@ final class AppErrorDialog extends BaseErrorDialog implements View.OnClickListen
             getWindow().setType(WindowManager.LayoutParams.TYPE_SYSTEM_ERROR);
         }
 
-        if((mService.mProcessMap.get(mProc.info.processName) != null)||(mService.mServiceMap.get(mProc.info.processName) != null)){
-        	//do not pop dialog for filter process
-                mHandler.sendMessage(mHandler.obtainMessage(FORCE_QUIT));
-	}else{
-        	// After the timeout, pretend the user clicked the quit button
-        	mHandler.sendMessageDelayed(
+        // After the timeout, pretend the user clicked the quit button
+        mHandler.sendMessageDelayed(
                 mHandler.obtainMessage(TIMEOUT),
                 DISMISS_TIMEOUT);
-	}
     }
 
     @Override

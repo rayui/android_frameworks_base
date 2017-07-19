@@ -326,7 +326,6 @@ import static com.android.server.am.ActivityManagerDebugConfig.DEBUG_USAGE_STATS
 import static com.android.server.am.ActivityManagerDebugConfig.DEBUG_VISIBILITY;
 import static com.android.server.am.ActivityManagerDebugConfig.DEBUG_VISIBLE_BEHIND;
 import static com.android.server.am.ActivityManagerDebugConfig.DEBUG_WHITELISTS;
-import static com.android.server.am.ActivityManagerDebugConfig.DEBUG_LOWMEM;
 import static com.android.server.am.ActivityManagerDebugConfig.POSTFIX_BACKUP;
 import static com.android.server.am.ActivityManagerDebugConfig.POSTFIX_BROADCAST;
 import static com.android.server.am.ActivityManagerDebugConfig.POSTFIX_CLEANUP;
@@ -1467,14 +1466,6 @@ public final class ActivityManagerService extends ActivityManagerNative
 
     boolean mUsePerformanceTunner = false;
     DevicePerformanceTunner mDevicePerformanceTunner;
-    //process which do not start auto by broadcast and contentprovider from lowmem_package_filter.xml       
-    final Map<String,String> mProcessMap  =new HashMap<String,String>();
-    //service which do not start auto by call startService or bindService from lowmem_package_filter.xml 
-    final Map<String,String> mServiceMap  =new HashMap<String,String>(); 
-    final Map<String,String> mGameMap     =new HashMap<String,String>(); //games,need to do memory cleanup
-    final ArrayList<String> mExcludePrevApp = new ArrayList<String>();   //process which would not stop when go to pause
-    final ArrayList<String> mExcludeNextApp = new ArrayList<String>();   //process which would not pause prev app when starting
-    final ArrayList<String> mExcludeEmptyApp = new ArrayList<String>();   //process which would not being killed when empty
 
     private final class AppDeathRecipient implements IBinder.DeathRecipient {
         final ProcessRecord mApp;
@@ -2754,89 +2745,6 @@ public final class ActivityManagerService extends ActivityManagerNative
 
         Watchdog.getInstance().addMonitor(this);
         Watchdog.getInstance().addThread(mHandler);
-
-	if((("true".equals(SystemProperties.get("ro.config.low_ram", "false")))||("true".equals(SystemProperties.get("ro.mem_optimise.enable", "false"))) ||( "vr".equals(android.os.SystemProperties.get("ro.target.product","unknown"))) ) && (!"true".equals(SystemProperties.get("sys.cts_gts.status", "false")))){
-  		File configureDir = Environment.getRootDirectory();
-  		File packageForLowmemFilter = new File(configureDir, "etc/lowmem_package_filter.xml");
-  		if (packageForLowmemFilter.exists()) {
-      		try {
-        		FileInputStream stream = new FileInputStream(packageForLowmemFilter);
-        		XmlPullParser parser = Xml.newPullParser();
-        		parser.setInput(stream, null);
-
-          		int type;
-          		do {
-              			type = parser.next();
-              			if (type == XmlPullParser.START_TAG) {
-                  			String tag = parser.getName();
-                  			if ("app".equals(tag)) {
-                      				String pkgName = parser.getAttributeValue(null, "package");
-		      				if(pkgName!=null)
-		      				{
-		      					mProcessMap.put(pkgName,pkgName);
-							if(DEBUG_LOWMEM)Slog.d("xzj","--add filter package "+pkgName);
-		      				}
-                  			}
-		  			else if("service".equals(tag))
-		  			{
-		      				String serviceName = parser.getAttributeValue(null, "package");
-		      				if(serviceName!=null)
-		      				{
-		      					mServiceMap.put(serviceName,serviceName);
-							if(DEBUG_LOWMEM)Slog.d("xzj","---add filter service "+serviceName);
-		      				}
-		  			}
-		  			else if("game".equals(tag))
-					{
-						String gameName = parser.getAttributeValue(null, "package");
-						if(gameName!=null)
-						{
-							mGameMap.put(gameName,gameName);
-							if(DEBUG_LOWMEM)Slog.d("xzj","---add filter game "+gameName);
-						}	
-					}
-                                	else if("prev".equals(tag))
-                                	{
-                                		String prevName = parser.getAttributeValue(null, "package");
-                                        	if(prevName!=null)
-                                        	{
-                                        		mExcludePrevApp.add(prevName);
-                                        		if(DEBUG_LOWMEM)Slog.d("xzj","---add filter prevApp "+prevName);
-                                        	}
-                                	}
-                                	else if("next".equals(tag))
-                                	{
-                                		String nextName = parser.getAttributeValue(null, "package");
-                                        	if(nextName!=null)
-                                        	{
-                                        		mExcludeNextApp.add(nextName);
-                                        		if(DEBUG_LOWMEM)Slog.d("xzj","---add filter nextApp "+nextName);
-                                        	}
-                                	}
-					else if("empty".equals(tag))	
-					{
-						String emptyName = parser.getAttributeValue(null, "package");
-						if(emptyName!=null)
-						{
-							mExcludeEmptyApp.add(emptyName);
-							if(DEBUG_LOWMEM)Slog.d("xzj","---add filter emptyApp "+emptyName);
-						}
-					}
-				}
-          		} while (type != XmlPullParser.END_DOCUMENT);
-      		} catch (NullPointerException e) {
-         		Slog.w(TAG, "failed parsing " + packageForLowmemFilter, e);
-      		} catch (NumberFormatException e) {
-          		Slog.w(TAG, "failed parsing " + packageForLowmemFilter, e);
-      		} catch (XmlPullParserException e) {
-          		Slog.w(TAG, "failed parsing " + packageForLowmemFilter, e);
-      		} catch (IOException e) {
-          		Slog.w(TAG, "failed parsing " + packageForLowmemFilter, e);
-      		} catch (IndexOutOfBoundsException e) {
-          		Slog.w(TAG, "failed parsing " + packageForLowmemFilter, e);
-      		}
-      	    }
-      }
     }
 
     public void setSystemServiceManager(SystemServiceManager mgr) {
@@ -3685,47 +3593,6 @@ public final class ActivityManagerService extends ActivityManagerNative
             // If this is an isolated process, it can't re-use an existing process.
             app = null;
         }
-	if(DEBUG_LOWMEM)Slog.v("xzj", "startProcess: name=" + processName
-		+ " app=" + app + " knownToBeDead=" + knownToBeDead+" hostingType="+hostingType+" intentFlags="+intentFlags
-		+ " thread=" + (app != null ? app.thread : null)+ " pid=" + (app != null ? app.pid : -1));
-
-	if((("true".equals(SystemProperties.get("ro.config.low_ram", "false")))
-		||("true".equals(SystemProperties.get("ro.mem_optimise.enable", "false")))) && (!"true".equals(SystemProperties.get("sys.cts_gts.status", "false")))){
-        	final ActivityRecord next = getFocusedStack().topRunningActivityLocked();
-	        if(next!= null && (!next.packageName.equals(processName)&& !processName.contains("antutu")) && next.packageName.contains("antutu")){
-             		if(DEBUG_LOWMEM)Slog.v("xzj", "process dont start because for antutu: " + next.packageName + "/" + info.processName);
-                	return null;
-               	}
-		if((mProcessMap.get(processName) != null) && (("broadcast".equals(hostingType))||("content provider".equals(hostingType)))){
-			if(DEBUG_LOWMEM)Slog.v("xzj", "process dont start because for filter: " + info.uid + "/" + info.processName);
-			return null;
-		}
-		if((mServiceMap.get(processName) != null)&&("service".equals(hostingType))&&((info.flags & ApplicationInfo.FLAG_IS_GAME) !=0))
-		//for service start by system
-		{
-			if(DEBUG_LOWMEM)Slog.v("xzj", "service dont start auto because for filter: " + info.uid + "/" + info.processName);
-			return null;	
-		}
-
-		if(((info.flags & ApplicationInfo.FLAG_SYSTEM) ==0)&&("broadcast".equals(hostingType)))
-		{
-			if(DEBUG_LOWMEM)Slog.v("xzj", "third part process dont start for broadcast: " + info.uid + "/" + info.processName);
-			return null;
-		}
-		if(mGameMap.get(processName) != null)
-		{
-			killAllBackgroundProcesses();
-			if(DEBUG_LOWMEM)Slog.v("xzj", "----clean memory for start " + info.processName);	
-		}
-	}
-        if(("com.google.android.setupwizard".equals(processName)) 
-	&& (("true".equals(SystemProperties.get("ro.config.low_ram", "false")))||("true".equals(SystemProperties.get("ro.mem_optimise.enable", "false"))))){
-		if(!"true".equals(SystemProperties.get("sys.cts_gts.status", "false")))
-		{
-			Log.d("xzj","--start com.google.android.setupwizard---");
-			SystemProperties.set("sys.cts_gts.status","true");
-		}
-	}
 
         // app launch boost for big.little configurations
         // use cpusets to migrate freshly launched tasks to big cores
@@ -5405,12 +5272,7 @@ public final class ActivityManagerService extends ActivityManagerNative
             EventLog.writeEvent(EventLogTags.AM_PROC_DIED, app.userId, app.pid, app.processName);
             if (DEBUG_CLEANUP) Slog.v(TAG_CLEANUP,
                 "Dying app: " + app + ", pid: " + pid + ", thread: " + thread.asBinder());
-	    boolean isrestart = true; 
-	    if((("true".equals(SystemProperties.get("ro.config.low_ram", "false")))||("true".equals(SystemProperties.get("ro.mem_optimise.enable", "false")))) 
-		&& (!"true".equals(SystemProperties.get("sys.cts_gts.status", "false"))))
-	    	if(!"com.android.systemui".equals(app.processName))
-	    		isrestart = false;
-            handleAppDiedLocked(app, false, isrestart);
+            handleAppDiedLocked(app, false, true);
 
             if (doOomAdj) {
                 updateOomAdjLocked();
@@ -11567,16 +11429,9 @@ public final class ActivityManagerService extends ActivityManagerNative
                 final List<ApplicationInfo> apps = AppGlobals.getPackageManager()
                         .getPersistentApplications(STOCK_PM_FLAGS | matchFlags).getList();
                 for (ApplicationInfo app : apps) {
-		    if((("true".equals(SystemProperties.get("ro.config.low_ram", "false")))||("true".equals(SystemProperties.get("ro.mem_optimise.enable", "false"))))
-				    && (!"true".equals(SystemProperties.get("sys.cts_gts.status", "false")))){
-			if((mProcessMap.get(app.processName) != null)||(mServiceMap.get(app.processName) != null)){
-				if(DEBUG_LOWMEM)Slog.d("xzj","---low mem mode,system ready skip start persist app= "+app);
-				continue;
-		    	}
-		    }
                     if (!"android".equals(app.packageName)) {
-		    	addAppLocked(app, false, null /* ABI override */);
-		    }
+                        addAppLocked(app, false, null /* ABI override */);
+                    }
                 }
             } catch (RemoteException ex) {
             }
@@ -11779,18 +11634,8 @@ public final class ActivityManagerService extends ActivityManagerNative
         }
 
         if ((info.flags & PERSISTENT_MASK) == PERSISTENT_MASK) {
-            if((("true".equals(SystemProperties.get("ro.config.low_ram", "false")))||("true".equals(SystemProperties.get("ro.mem_optimise.enable", "false")))) 
-			    && (!"true".equals(SystemProperties.get("sys.cts_gts.status", "false")))){
-		if((info.processName.contains("com.android.systemui"))||(info.processName.contains("android.process.media")))
-	    	{
-            		app.persistent = true;
-            		app.maxAdj = ProcessList.PERSISTENT_PROC_ADJ;
-			if(DEBUG_LOWMEM)Slog.d("xzj","---only set systemui and android.process.media to persist in lowmem devices---");
-	    	}
-	    }else{
-	    	app.persistent = true;
-		app.maxAdj = ProcessList.PERSISTENT_PROC_ADJ;
-	    }
+            app.persistent = true;
+            app.maxAdj = ProcessList.PERSISTENT_PROC_ADJ;
         }
         if (app.thread == null && mPersistentStartingProcesses.indexOf(app) < 0) {
             mPersistentStartingProcesses.add(app);
@@ -17288,15 +17133,6 @@ public final class ActivityManagerService extends ActivityManagerNative
         if (app == mPreviousProcess) {
             mPreviousProcess = null;
         }
-        if((("true".equals(SystemProperties.get("ro.config.low_ram", "false")))||("true".equals(SystemProperties.get("ro.mem_optimise.enable", "false")))) 
-            && (!"true".equals(SystemProperties.get("sys.cts_gts.status", "false"))))//if lowmem config
-        {
-            if((!"com.android.systemui".equals(app.processName))&&(!"android.process.media".equals(app.processName)))
-            {     
-                if(DEBUG_LOWMEM)Slog.d("xzj","---low mem mode,skip restart crashed app= "+app);
-                 restart = false;
-            }     
-        }
 
         if (restart && !app.isolated) {
             // We have components that still need to be running in the
@@ -21136,8 +20972,8 @@ public final class ActivityManagerService extends ActivityManagerNative
         mNewNumServiceProcs = 0;
         mNewNumAServiceProcs = 0;
 
-        int emptyProcessLimit;
-        int cachedProcessLimit;
+        final int emptyProcessLimit;
+        final int cachedProcessLimit;
         if (mProcessLimit <= 0) {
             emptyProcessLimit = cachedProcessLimit = 0;
         } else if (mProcessLimit == 1) {
@@ -21147,14 +20983,6 @@ public final class ActivityManagerService extends ActivityManagerNative
             emptyProcessLimit = ProcessList.computeEmptyProcessLimit(mProcessLimit);
             cachedProcessLimit = mProcessLimit - emptyProcessLimit;
         }
-	if(("true".equals(SystemProperties.get("ro.config.low_ram", "false")))
-		&& (!"true".equals(SystemProperties.get("sys.cts_gts.status", "false")))){
-		emptyProcessLimit = cachedProcessLimit = 0;
-	}else if(("true".equals(SystemProperties.get("ro.mem_optimise.enable", "false")))
-		&&(!"true".equals(SystemProperties.get("sys.cts_gts.status", "false")))){
-		emptyProcessLimit = cachedProcessLimit = 3;
-	}
-
 
         // Let's determine how many processes we have running vs.
         // how many slots we have for background processes; we may want
