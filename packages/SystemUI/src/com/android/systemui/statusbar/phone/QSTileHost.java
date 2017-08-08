@@ -73,7 +73,7 @@ import com.android.systemui.statusbar.policy.UserSwitcherController;
 import com.android.systemui.statusbar.policy.ZenModeController;
 import com.android.systemui.tuner.TunerService;
 import com.android.systemui.tuner.TunerService.Tunable;
-import android.os.SystemProperties;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -85,6 +85,7 @@ import java.util.Map;
 public class QSTileHost implements QSTile.Host, Tunable {
     private static final String TAG = "QSTileHost";
     private static final boolean DEBUG = Log.isLoggable(TAG, Log.DEBUG);
+
     public static final String TILES_SETTING = Secure.QS_TILES;
 
     private final Context mContext;
@@ -442,9 +443,7 @@ public class QSTileHost implements QSTile.Host, Tunable {
     }
 
     protected List<String> loadTileSpecs(Context context, String tileList) {
-        boolean isSupportBluetooth = "true".equals(SystemProperties.get("ro.rk.bt_enable"));
-        boolean isSupportFlash = "true".equals(SystemProperties.get("ro.rk.flash_enable"));
-	final Resources res = context.getResources();
+        final Resources res = context.getResources();
         final String defaultTileList = res.getString(R.string.quick_settings_tiles_default);
         if (tileList == null) {
             tileList = res.getString(R.string.quick_settings_tiles);
@@ -457,20 +456,9 @@ public class QSTileHost implements QSTile.Host, Tunable {
         for (String tile : tileList.split(",")) {
             tile = tile.trim();
             if (tile.isEmpty()) continue;
-            if(!isSupportBluetooth && tile.equals("bt"))
-                continue;
-            if(!isSupportFlash && tile.equals("flashlight"))
-                continue;
             if (tile.equals("default")) {
                 if (!addedDefault) {
-                    for(String defaultTile : defaultTileList.split(",")){
-                        if (defaultTile.isEmpty()) continue;
-                        if(!isSupportBluetooth && defaultTile.equals("bt"))
-                           continue;
-                        if(!isSupportFlash && defaultTile.equals("flashlight"))
-                           continue;
-                        tiles.add(defaultTile);
-                    }
+                    tiles.addAll(Arrays.asList(defaultTileList.split(",")));
                     addedDefault = true;
                 }
             } else {
