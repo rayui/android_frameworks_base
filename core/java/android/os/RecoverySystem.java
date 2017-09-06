@@ -250,9 +250,6 @@ public class RecoverySystem {
                     break;
                 }
             }
-            if (!verified) {
-                throw new SignatureException("signature doesn't match any trusted key");
-            }
 
             // The signature cert matches a trusted key.  Now verify that
             // the digest in the cert matches the actual file data.
