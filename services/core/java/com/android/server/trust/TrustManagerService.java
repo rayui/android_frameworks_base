@@ -383,6 +383,10 @@ public class TrustManagerService extends SystemService {
                 mDeviceLockedForUser.put(id, deviceLocked);
                 if (deviceLocked) {
                     SystemProperties.set("sys.device_locked.status","1");
+                    try {
+                        ActivityManagerNative.getDefault().notifyLockedProfile(userId);
+                    } catch (RemoteException e) {
+                    }
                 } else {
                     SystemProperties.set("sys.device_locked.status","0");
                 }
