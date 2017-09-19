@@ -6735,8 +6735,6 @@ public final class ActivityManagerService extends ActivityManagerNative
         EventLog.writeEvent(EventLogTags.BOOT_PROGRESS_ENABLE_SCREEN,
                 SystemClock.uptimeMillis());
         mWindowManager.enableScreenAfterBoot();
-        SystemProperties.set("service.bootanim.exit", "1");
-        Log.d(TAG,"stop bootanim");
 
         synchronized (this) {
             updateEventDispatchingLocked();
@@ -13304,8 +13302,7 @@ public final class ActivityManagerService extends ActivityManagerNative
                 // If we're done calling all the receivers, run the next "boot phase" passed in
                 // by the SystemServer
                 if (goingCallback != null) {
-                    //goingCallback.run();
-                    mHandler.post(goingCallback);
+                    goingCallback.run();
                 }
                 return;
             }
