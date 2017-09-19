@@ -6735,6 +6735,10 @@ public final class ActivityManagerService extends ActivityManagerNative
         EventLog.writeEvent(EventLogTags.BOOT_PROGRESS_ENABLE_SCREEN,
                 SystemClock.uptimeMillis());
         mWindowManager.enableScreenAfterBoot();
+	//do not exit bootanim,because startHomeActivityLocked will start com.android.settings.FallbackHome,and will show black screen before keygurad
+        //SystemProperties.set("service.bootanim.exit", "1");
+        //Log.d(TAG,"stop bootanim");
+
         synchronized (this) {
             updateEventDispatchingLocked();
         }
