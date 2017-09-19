@@ -66,7 +66,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
-import android.os.PowerManager;
 import android.os.Process;
 import android.os.RemoteException;
 import android.os.SystemProperties;
@@ -2366,25 +2365,6 @@ public class ApplicationPackageManager extends PackageManager {
 
     private boolean isManagedProfile(int userId) {
         return getUserManager().isManagedProfile(userId);
-    }
-
-    @Override
-    public int getPackagePerformanceMode(String pkgName) {
-        try {
-            return mPM.getPackagePerformanceMode(pkgName);
-        } catch (RemoteException e) {
-            // Should never happen!
-        }
-        return PowerManager.PERFORMANCE_MODE_NORMAL;
-    }
-
-    @Override
-    public void setPackagePerformanceMode(String pkgName, int mode) {
-        try {
-            mPM.setPackagePerformanceMode(pkgName, mode);
-        } catch (RemoteException e) {
-            // Should never happen!
-        }
     }
 
     /** {@hide} */

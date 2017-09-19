@@ -573,7 +573,4 @@ interface IPackageManager {
     boolean isPackageDeviceAdminOnAnyUser(String packageName);
 
     List<String> getPreviousCodePaths(in String packageName);
- 
-    int getPackagePerformanceMode(String pkgName);
-    void setPackagePerformanceMode(String pkgName, int mode);
 }
