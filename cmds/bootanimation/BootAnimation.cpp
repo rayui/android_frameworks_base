@@ -64,7 +64,6 @@ namespace android {
 
 static const char OEM_BOOTANIMATION_FILE[] = "/oem/media/bootanimation.zip";
 static const char SYSTEM_BOOTANIMATION_FILE[] = "/system/media/bootanimation.zip";
-static const char SYSTEM_SHUTDOWNANIMATION_FILE[] = "/system/media/shutdownanimation.zip";
 static const char SYSTEM_ENCRYPTED_BOOTANIMATION_FILE[] = "/system/media/bootanimation-encrypted.zip";
 static const char SYSTEM_DATA_DIR_PATH[] = "/data/system";
 static const char SYSTEM_TIME_DIR_NAME[] = "time";
@@ -86,7 +85,6 @@ static constexpr size_t FONT_NUM_ROWS = FONT_NUM_CHARS / FONT_NUM_COLS;
 static const int TEXT_CENTER_VALUE = INT_MAX;
 static const int TEXT_MISSING_VALUE = INT_MIN;
 static const char EXIT_PROP_NAME[] = "service.bootanim.exit";
-static const char LOOP_COMPLETED_PROP_NAME[] = "sys.anim_loop.completed";
 static const char PLAY_SOUND_PROP_NAME[] = "persist.sys.bootanim.play_sound";
 static const int ANIM_ENTRY_NAME_MAX = 256;
 static constexpr size_t TEXT_POS_LEN_MAX = 16;
@@ -101,27 +99,12 @@ static const std::vector<std::string> PLAY_SOUND_BOOTREASON_BLACKLIST {
 
 // ---------------------------------------------------------------------------
 
-BootAnimation::BootAnimation(bool shutdown) : Thread(false), mClockEnabled(true), mTimeIsAccurate(false),
+BootAnimation::BootAnimation() : Thread(false), mClockEnabled(true), mTimeIsAccurate(false),
         mTimeFormat12Hour(false), mTimeCheckThread(NULL) {
     mSession = new SurfaceComposerClient();
 
     // If the system has already booted, the animation is not being used for a boot.
     mSystemBoot = !property_get_bool(BOOT_COMPLETED_PROP_NAME, 0);
-    mShutdown = shutdown;
-    mReverseAxis = false;
-    if(mShutdown){
-        sp<IBinder> dtoken(SurfaceComposerClient::getBuiltInDisplay(
-                                        ISurfaceComposer::eDisplayIdMain)); // primary_display_token
-        DisplayInfo dinfo;
-        status_t status = SurfaceComposerClient::getDisplayInfo(dtoken, &dinfo);
-        if (status == OK) {
-            ALOGD("DISPLAY,W-H: %d-%d, ori: %d", dinfo.w, dinfo.h, dinfo.orientation);
-            if(dinfo.orientation==1 || dinfo.orientation==3 )
-                mReverseAxis=true;
-            else
-                mReverseAxis=false;
-        }
-    }
 }
 
 BootAnimation::~BootAnimation() {}
@@ -286,15 +269,8 @@ status_t BootAnimation::readyToRun() {
         return -1;
 
     // create the native surface
-    int curWidth = dinfo.w;
-    int curHeight = dinfo.h;
-    if(mShutdown && mReverseAxis){
-        curWidth = dinfo.h;
-        curHeight = dinfo.w;
-    }
-
     sp<SurfaceControl> control = session()->createSurface(String8("BootAnimation"),
-            curWidth, curHeight, PIXEL_FORMAT_RGB_565);
+            dinfo.w, dinfo.h, PIXEL_FORMAT_RGB_565);
 
     SurfaceComposerClient::openGlobalTransaction();
     control->setLayer(0x40000000);
@@ -342,20 +318,15 @@ status_t BootAnimation::readyToRun() {
     property_get("vold.decrypt", decrypt, "");
 
     bool encryptedAnimation = atoi(decrypt) != 0 || !strcmp("trigger_restart_min_framework", decrypt);
-    if (!mShutdown) {
-        if (encryptedAnimation && (access(SYSTEM_ENCRYPTED_BOOTANIMATION_FILE, R_OK) == 0)) {
-            mZipFileName = SYSTEM_ENCRYPTED_BOOTANIMATION_FILE;
-        }
-        else if (access(OEM_BOOTANIMATION_FILE, R_OK) == 0) {
-            mZipFileName = OEM_BOOTANIMATION_FILE;
-        }
-        else if (access(SYSTEM_BOOTANIMATION_FILE, R_OK) == 0) {
-            mZipFileName = SYSTEM_BOOTANIMATION_FILE;
-        }
-    } else {
-        if (access(SYSTEM_SHUTDOWNANIMATION_FILE, R_OK) == 0) {
-            mZipFileName = SYSTEM_SHUTDOWNANIMATION_FILE;
-        }
+
+    if (encryptedAnimation && (access(SYSTEM_ENCRYPTED_BOOTANIMATION_FILE, R_OK) == 0)) {
+        mZipFileName = SYSTEM_ENCRYPTED_BOOTANIMATION_FILE;
+    }
+    else if (access(OEM_BOOTANIMATION_FILE, R_OK) == 0) {
+        mZipFileName = OEM_BOOTANIMATION_FILE;
+    }
+    else if (access(SYSTEM_BOOTANIMATION_FILE, R_OK) == 0) {
+        mZipFileName = SYSTEM_BOOTANIMATION_FILE;
     }
     return NO_ERROR;
 }
@@ -1001,12 +972,6 @@ bool BootAnimation::playAnimation(const Animation& animation)
 
     }
 
-    if(mShutdown){
-        property_set(LOOP_COMPLETED_PROP_NAME, "true");
-        while(1);
-    }
-
-
     // Free textures created for looping parts now that the animation is done.
     for (const Animation::Part& part : animation.parts) {
         if (part.count != 1) {
@@ -1069,7 +1034,7 @@ BootAnimation::Animation* BootAnimation::loadAnimation(const String8& fn)
 
 bool BootAnimation::playSoundsAllowed() const {
     // Only play sounds for system boots, not runtime restarts.
-    if (!mSystemBoot && !mShutdown) {
+    if (!mSystemBoot) {
         return false;
     }
 

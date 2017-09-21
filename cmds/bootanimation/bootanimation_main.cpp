@@ -30,10 +30,9 @@ using namespace android;
 
 // ---------------------------------------------------------------------------
 
-int main(int argc, char** argv)
+int main()
 {
     setpriority(PRIO_PROCESS, 0, ANDROID_PRIORITY_DISPLAY);
-    ALOGI("Boot_animation_process entered now!");
 
     char value[PROPERTY_VALUE_MAX];
     property_get("debug.sf.nobootanimation", value, "0");
@@ -45,14 +44,7 @@ int main(int argc, char** argv)
         ProcessState::self()->startThreadPool();
 
         // create the boot animation object
-        sp<BootAnimation> boot;
-        if(argc > 1){
-            if(strcmp(argv[1], "shutdown") == 0){
-                boot = new BootAnimation(true);
-            }
-        }else{
-            boot = new BootAnimation(false);
-        }
+        sp<BootAnimation> boot = new BootAnimation();
 
         IPCThreadState::self()->joinThreadPool();
 
