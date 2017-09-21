@@ -227,8 +227,6 @@ class WindowStateAnimator {
 
     int mAttrType;
 
-	boolean mSurfaceHidden;
-
     static final long PENDING_TRANSACTION_FINISH_WAIT_TIME = 100;
 
     boolean mForceScaleUntilResize;
@@ -580,9 +578,6 @@ class WindowStateAnimator {
     }
 
     void hide(String reason) {
-		if(mSurfaceHidden){
-		    return;
-		}
         if (!mLastHidden) {
             //dump();
             mLastHidden = true;

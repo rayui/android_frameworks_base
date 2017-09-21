@@ -2735,9 +2735,6 @@
 
   <java-symbol type="drawable" name="ic_restart" />
 
-  <java-symbol type="style" name="Animation.TranslucentLeft" />
-  <java-symbol type="style" name="Animation.TranslucentRight" />
-
   <java-symbol type="drawable" name="emergency_icon" />
 
   <java-symbol type="array" name="config_convert_to_emergency_number_map" />

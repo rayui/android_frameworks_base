@@ -49,7 +49,7 @@ class WindowSurfaceController {
 
     final WindowStateAnimator mAnimator;
 
-    SurfaceControl mSurfaceControl;
+    private SurfaceControl mSurfaceControl;
 
     private boolean mSurfaceShown = false;
     private float mSurfaceX = 0;
