@@ -153,7 +153,6 @@ public class UsbDeviceManager {
     private final UsbAlsaManager mUsbAlsaManager;
     private Intent mBroadcastedIntent;
 
-    private boolean mCharging=false;
     private class AdbSettingsObserver extends ContentObserver {
         public AdbSettingsObserver() {
             super(null);
@@ -415,13 +414,6 @@ public class UsbDeviceManager {
             } else if ("CONNECTED".equals(state)) {
                 connected = 1;
                 configured = 0;
-                trySetEnabledFunctions(getStatusFunctions(),false);
-                //if (!mCharging){
-                //    mUsbDataUnlocked = true;
-                //    updateUsbNotification();
-                //    updateUsbStateBroadcast();
-                //}
-                mCharging=false;
             } else if ("CONFIGURED".equals(state)) {
                 connected = 1;
                 configured = 1;
@@ -513,9 +505,6 @@ public class UsbDeviceManager {
                 boolean usbDataUnlocked) {
             if (DEBUG) Slog.d(TAG, "setEnabledFunctions functions=" + functions + ", "
                     + "forceRestart=" + forceRestart);
-            if (mCharging&&functions==null){
-                functions=UsbManager.USB_FUNCTION_ADB;
-            }
 
             if (usbDataUnlocked != mUsbDataUnlocked) {
                 mUsbDataUnlocked = usbDataUnlocked;
@@ -565,6 +554,7 @@ public class UsbDeviceManager {
             }
             functions = applyAdbFunction(functions);
             functions = applyOemOverrideFunction(functions);
+
             if (!mCurrentFunctions.equals(functions) || !mCurrentFunctionsApplied
                     || forceRestart) {
                 Slog.i(TAG, "Setting USB config to " + functions);
@@ -802,8 +792,6 @@ public class UsbDeviceManager {
                     break;
                 case MSG_BOOT_COMPLETED:
                     mBootCompleted = true;
-                    trySetEnabledFunctions(getDefaultFunctions(),false);
-                    updateUsbStateBroadcastIfNeeded();
                     if (mCurrentAccessory != null) {
                         getCurrentSettings().accessoryAttached(mCurrentAccessory);
                     }
@@ -959,15 +947,6 @@ public class UsbDeviceManager {
             return func;
         }
 
-        private String getStatusFunctions() {
-            String func = SystemProperties.get(USB_STATE_PROPERTY,
-                    UsbManager.USB_FUNCTION_NONE);
-            if (UsbManager.USB_FUNCTION_NONE.equals(func)) {
-                func = UsbManager.USB_FUNCTION_MTP;
-            }
-            return func;
-        }
-
         public void dump(IndentingPrintWriter pw) {
             pw.println("USB Device State:");
             pw.println("  mCurrentFunctions: " + mCurrentFunctions);
@@ -1016,20 +995,9 @@ public class UsbDeviceManager {
         return UsbManager.containsFunction(SystemProperties.get(USB_CONFIG_PROPERTY), function);
     }
 
-    public void setCurrentFunctions(String functions) {
-        if (DEBUG) Slog.d(TAG, "setCurrentFunctions(" + functions + ")");
-        if (functions==null){
-            mCharging=true;
-        }
-        mHandler.sendMessage(MSG_SET_CURRENT_FUNCTIONS, functions);
-    }
-
     public void setCurrentFunctions(String functions, boolean usbDataUnlocked) {
         if (DEBUG) Slog.d(TAG, "setCurrentFunctions(" + functions + ", " +
 				usbDataUnlocked + ")");
-        if (functions==null){
-            mCharging=true;
-        }
         mHandler.sendMessage(MSG_SET_CURRENT_FUNCTIONS, functions, usbDataUnlocked);
     }
 
