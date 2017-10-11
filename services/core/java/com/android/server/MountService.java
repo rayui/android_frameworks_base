@@ -1575,7 +1575,7 @@ class MountService extends IMountService.Stub
     private void readSettingsLocked() {
         mRecords.clear();
         mPrimaryStorageUuid = getDefaultPrimaryStorageUuid();
-        mForceAdoptable = false;
+        mForceAdoptable = true;
 
         FileInputStream fis = null;
         try {
@@ -1597,7 +1597,7 @@ class MountService extends IMountService.Stub
                             mPrimaryStorageUuid = readStringAttribute(in,
                                     ATTR_PRIMARY_STORAGE_UUID);
                         }
-                        mForceAdoptable = readBooleanAttribute(in, ATTR_FORCE_ADOPTABLE, false);
+                        mForceAdoptable = readBooleanAttribute(in, ATTR_FORCE_ADOPTABLE, true);
 
                     } else if (TAG_VOLUME.equals(tag)) {
                         final VolumeRecord rec = readVolumeRecord(in);
