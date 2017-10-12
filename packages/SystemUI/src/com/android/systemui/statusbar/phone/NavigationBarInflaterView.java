@@ -48,6 +48,7 @@ public class NavigationBarInflaterView extends FrameLayout implements TunerServi
     public static final String NAVSPACE = "space";
     public static final String CLIPBOARD = "clipboard";
     public static final String KEY = "key";
+    public static final String POWEROFF = "poweroff";
     public static final String SCREENSHOT = "screenshot";
     public static final String VOLUME_ADD = "volume_add";
     public static final String VOLUME_SUB = "volume_sub";
@@ -263,6 +264,11 @@ public class NavigationBarInflaterView extends FrameLayout implements TunerServi
             }
         } else if (RECENT.equals(button)) {
             v = inflater.inflate(R.layout.recent_apps, parent, false);
+            if (landscape && isSw600Dp()) {
+                setupLandButton(v);
+            }
+        } else if (POWEROFF.equals(button)) {
+            v = inflater.inflate(R.layout.poweroff, parent, false);
             if (landscape && isSw600Dp()) {
                 setupLandButton(v);
             }

@@ -1470,19 +1470,23 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
 
         ButtonDispatcher volumeAddButton=mNavigationBarView.getVolumeAddButton();
         ButtonDispatcher volumeSubButton=mNavigationBarView.getVolumeSubButton();
+        ButtonDispatcher poweroffButton=mNavigationBarView.getPoweroffButton();
         boolean isShowVolumeButton="true".equals(SystemProperties.get("ro.rk.systembar.voiceicon","true"));
         if(isShowVolumeButton){
             volumeAddButton.setVisibility(View.VISIBLE);
             volumeSubButton.setVisibility(View.VISIBLE);
+            poweroffButton.setVisibility(View.VISIBLE);
         }else{
             volumeAddButton.setVisibility(View.GONE);
             volumeSubButton.setVisibility(View.GONE);
+            poweroffButton.setVisibility(View.GONE);
         }
         if ((mContext.getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT)
                 && ((mContext.getResources().getConfiguration().screenHeightDp < 600)
                 || (mContext.getResources().getConfiguration().screenWidthDp < 600))) {
             volumeAddButton.setVisibility(View.GONE);
             volumeSubButton.setVisibility(View.GONE);
+            poweroffButton.setVisibility(View.GONE);
         }
         mAssistManager.onConfigurationChanged();
     }
