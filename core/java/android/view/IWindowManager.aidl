@@ -24,6 +24,7 @@ import com.android.internal.policy.IShortcutService;
 
 import android.content.res.CompatibilityInfo;
 import android.content.res.Configuration;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Point;
 import android.graphics.Rect;
@@ -437,4 +438,6 @@ interface IWindowManager
      * Remove the input consumer for wallpaper events.
      */
     void removeWallpaperInputConsumer();
+    void setApplicationShortcut(int keyCode, in Intent intent);
+    String getApplicationOfShortcutAt (int keyCode);
 }
