@@ -220,6 +220,10 @@ public class KeyButtonView extends ImageView implements ButtonDispatcher.ButtonI
                 final boolean doIt = isPressed() && !mLongClicked;
                 setPressed(false);
                 if (mCode != 0) {
+                    if (mCode == 89) {
+                        PoweroffUtils.Poweroff();
+                    }
+
                     if (doIt) {
                         sendEvent(KeyEvent.ACTION_UP, 0);
                         sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_CLICKED);
