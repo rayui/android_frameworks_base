@@ -168,7 +168,12 @@ final class LocalDisplayAdapter extends DisplayAdapter {
                         if ("90".equals(SystemProperties.get("ro.sf.hwrotation"))) {
                             mInfo.rotation = Surface.ROTATION_90;
                         }
+                    } else if ("landscape".equals(SystemProperties.get("persist.demo.hdmirotation"))) {
+                        if ("180".equals(SystemProperties.get("ro.sf.hwrotation"))) {
+                            mInfo.rotation = Surface.ROTATION_180;
+                        }
                     }
+
                 }
             }
             return mInfo;
