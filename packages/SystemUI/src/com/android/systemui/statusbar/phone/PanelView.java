@@ -44,8 +44,6 @@ import com.android.systemui.statusbar.policy.HeadsUpManager;
 
 import java.io.FileDescriptor;
 import java.io.PrintWriter;
-import android.os.SystemProperties;
-import android.app.KeyguardManager;
 
 public abstract class PanelView extends FrameLayout {
     public static final boolean DEBUG = PanelBar.DEBUG;
@@ -403,8 +401,7 @@ public abstract class PanelView extends FrameLayout {
                                 EventLogConstants.SYSUI_LOCKSCREEN_GESTURE_SWIPE_UP_UNLOCK,
                                 heightDp, velocityDp);
                     }
-	    	fling(vel, expand, isFalseTouch(x, y));
-
+            fling(vel, expand, isFalseTouch(x, y));
             onTrackingStopped(expand);
             mUpdateFlingOnLayout = expand && mPanelClosedOnDown && !mHasLayoutedSinceDown;
             if (mUpdateFlingOnLayout) {
@@ -757,7 +754,6 @@ public abstract class PanelView extends FrameLayout {
         }
 
         mExpandedHeight = Math.max(0, mExpandedHeight);
-
         mExpandedFraction = Math.min(1f, fhWithoutOverExpansion == 0
                 ? 0
                 : mExpandedHeight / fhWithoutOverExpansion);

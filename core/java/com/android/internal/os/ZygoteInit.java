@@ -111,6 +111,8 @@ public class ZygoteInit {
     /** Controls whether we should preload resources during zygote init. */
     public static final boolean PRELOAD_RESOURCES = true;
 
+    private static final boolean isBox = "box".equals(SystemProperties.get("ro.target.product"));
+
     /**
      * Registers a server socket for zygote command connections
      *
@@ -686,7 +688,10 @@ public class ZygoteInit {
         /* For child process */
         if (pid == 0) {
             if (hasSecondZygote(abiList)) {
-                waitForSecondaryZygote(socketName);
+                if(isBox){
+                    waitForSecondaryZygote(socketName);
+                }
+                Log.d(TAG,"--------call waitForSecondaryZygote,skip this---,abiList= "+abiList);
             }
 
             handleSystemServerProcess(parsedArgs);
@@ -712,8 +717,18 @@ public class ZygoteInit {
     public static void main(String argv[]) {
         // Mark zygote start. This ensures that thread creation will throw
         // an error.
-        ZygoteHooks.startZygoteNoThreadCreation();
 
+        boolean isFirstBooting = false;
+        if(!isBox){
+            // Finish profiling the zygote initialization.
+            // if first time booting or zygote restart or data encrypted,we need preload full class
+            if(Process.myPid() > 300 || SystemProperties.get("ro.crypto.state").equals("encrypted")){
+                isFirstBooting = true;
+                ZygoteHooks.startZygoteNoThreadCreation();
+            }
+        }else{
+            ZygoteHooks.startZygoteNoThreadCreation();
+        }
         try {
             Trace.traceBegin(Trace.TRACE_TAG_DALVIK, "ZygoteInit");
             RuntimeInit.enableDdms();
@@ -740,6 +755,12 @@ public class ZygoteInit {
             }
 
             registerZygoteSocket(socketName);
+            if(!isFirstBooting && !isBox){
+                if (startSystemServer) {
+                    startSystemServer(abiList, socketName);
+                }
+            }
+
             Trace.traceBegin(Trace.TRACE_TAG_DALVIK, "ZygotePreload");
             EventLog.writeEvent(LOG_BOOT_PROGRESS_PRELOAD_START,
                 SystemClock.uptimeMillis());
@@ -765,10 +786,11 @@ public class ZygoteInit {
             // Zygote process unmounts root storage spaces.
             Zygote.nativeUnmountStorageOnInit();
 
-            ZygoteHooks.stopZygoteNoThreadCreation();
-
-            if (startSystemServer) {
-                startSystemServer(abiList, socketName);
+            if(isFirstBooting || isBox){
+                ZygoteHooks.stopZygoteNoThreadCreation();
+                if (startSystemServer) {
+                    startSystemServer(abiList, socketName);
+                }
             }
 
             Log.i(TAG, "Accepting command socket connections");

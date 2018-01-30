@@ -1061,7 +1061,7 @@ public class IpManager extends StateMachine {
             mIpReachabilityMonitor = null;
         }
 
-        return (mIpReachabilityMonitor != null);
+	return (mIpReachabilityMonitor != null);
     }
 
     private void stopAllIP() {

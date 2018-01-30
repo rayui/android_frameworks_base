@@ -59,6 +59,8 @@
 
 #include "BootAnimation.h"
 #include "audioplay.h"
+#include <media/mediaplayer.h>
+#include <media/IMediaHTTPService.h>
 
 namespace android {
 
@@ -316,7 +318,6 @@ status_t BootAnimation::readyToRun() {
     // of being encrypted we show the encrypted boot animation.
     char decrypt[PROPERTY_VALUE_MAX];
     property_get("vold.decrypt", decrypt, "");
-
     bool encryptedAnimation = atoi(decrypt) != 0 || !strcmp("trigger_restart_min_framework", decrypt);
 
     if (encryptedAnimation && (access(SYSTEM_ENCRYPTED_BOOTANIMATION_FILE, R_OK) == 0)) {
@@ -334,14 +335,21 @@ status_t BootAnimation::readyToRun() {
 bool BootAnimation::threadLoop()
 {
     bool r;
-    // We have no bootanimation file, so we use the stock android logo
-    // animation.
-    if (mZipFileName.isEmpty()) {
-        r = android();
-    } else {
-        r = movie();
-    }
+    //add for boot video function
+    mStartbootanimaTime = 0;
+    mBootVideoTime = -1;
 
+    if (mVideoAnimation){
+        r = video();
+    } else {
+	    // We have no bootanimation file, so we use the stock android logo
+	    // animation.
+	    if (mZipFileName.isEmpty()) {
+	        r = android();
+	    } else {
+	        r = movie();
+	    }
+    }
     eglMakeCurrent(mDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
     eglDestroyContext(mDisplay, mContext);
     eglDestroySurface(mDisplay, mSurface);
@@ -422,8 +430,22 @@ void BootAnimation::checkExit() {
     char value[PROPERTY_VALUE_MAX];
     property_get(EXIT_PROP_NAME, value, "0");
     int exitnow = atoi(value);
+    //add for boot video function         
+     property_get("persist.sys.bootvideo.enable",value, "false");
+     const nsecs_t realBootanimaTime = systemTime()-mStartbootanimaTime;
     if (exitnow) {
-        requestExit();
+        //add for boot video function
+        if(!strcmp(value,"true")){
+        //   ALOGD("checkExit,requestExit bootvideo====realBootanimaTime:%lld,mBootVideoTime:%d",realBootanimaTime,mBootVideoTime);
+          if((ns2ms(realBootanimaTime)/1000) > mBootVideoTime){
+           ALOGD("checkExit,requestExit for bootvideo");
+             //close bootvolume for audioflinger
+             property_set("sys.bootvideo.closed", "1");
+             requestExit();
+           }
+        } else {
+           requestExit();
+        }
     }
 }
 
@@ -1187,6 +1209,68 @@ status_t BootAnimation::TimeCheckThread::readyToRun() {
     return NO_ERROR;
 }
 
+//add for boot video
+bool BootAnimation::video()
+{
+    const bool LOOP = false;
+    const float CHECK_DELAY = 500*1000;//500ms
+    int duration = 0;
+    char delay[64];
+    sp<IMediaHTTPService> httpService;
+
+    char value[PROPERTY_VALUE_MAX];
+    property_get("persist.sys.bootvideo.showtime", value, "-1");
+    int bootvideo_time = atoi(value);//s
+    if(bootvideo_time > 120)
+          bootvideo_time = 120;
+//    ALOGD("bootvideo:start MediaPlayer init");
+    sp<MediaPlayer> mp = new MediaPlayer();
+//    ALOGD("bootvideo:end MediaPlayer init");
+    // create the native surface
+    sp<SurfaceControl> control = session()->createSurface(String8("BootAnimation_video"),mWidth, mHeight, PIXEL_FORMAT_RGB_565);
+    SurfaceComposerClient::openGlobalTransaction();
+    control->setLayer(0x40000001);
+    SurfaceComposerClient::closeGlobalTransaction();
+    sp<Surface> surface = control->getSurface();
+    mp->setDataSource(httpService,mVideoFile, NULL);
+    mp->setLooping(LOOP);
+    mp->setVideoSurfaceTexture(surface->getIGraphicBufferProducer());
+    mp->prepare();
+
+    mp->getDuration(&duration);//persist.sys.pic_time
+    if(bootvideo_time > 0){
+        sprintf(delay, "%d", bootvideo_time);
+    } else if (bootvideo_time == -2){
+        sprintf(delay, "%d", (duration/1000)+1);
+    }else if(bootvideo_time == -1){
+        sprintf(delay, "%d", 0);
+    }
+    //property_set("persist.sys.pic_time", delay);
+    mBootVideoTime = atoi(delay);
+    ALOGD("bootvideo:bootvideo.showtime=%d, duration=%d, delay=%s\n",bootvideo_time,duration, delay);
+
+    mp->start();
+    mStartbootanimaTime = systemTime();
+    while(true) {
+        const nsecs_t realVideoTime = systemTime()-mStartbootanimaTime;
+        checkExit();
+        property_set("sys.bootvideo.closed", "0");
+        usleep(CHECK_DELAY);
+        if(!mp->isPlaying()||(((ns2ms(realVideoTime)/1000) > bootvideo_time) && (bootvideo_time > -1))){
+          mp->pause();
+        }
+        if(exitPending()){
+           ALOGD("bootvideo:-----------------stop bootanimationvedio");
+           break;
+          }
+    }
+    property_set("sys.bootvideo.closed", "1");
+    mp->stop();
+    surface.clear();
+    control.clear();
+    mp = NULL;
+    return false;
+}
 // ---------------------------------------------------------------------------
 
 }
